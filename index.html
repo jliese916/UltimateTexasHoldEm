@@ -11,7 +11,7 @@
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./favicon-64.png" rel="icon" type="image/png"/>
 <link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="./styles.css?v=1" rel="stylesheet"/>
+<link href="./styles.css?v=2" rel="stylesheet"/>
 </head>
 <body>
 <main class="app">
@@ -25,8 +25,12 @@
 <div class="castle-kicker">Casa del Jefe</div>
 <h1>The Ultimate Hold’em Parlor</h1>
 <details class="header-paytable" id="paytableDetails">
-<summary>Core game · equal Ante and Blind wagers</summary>
-<div aria-label="Ultimate Texas Hold'em Blind paytable" class="header-paytable-grid">
+<summary>Payouts &amp; Rules</summary>
+<div aria-label="Ultimate Texas Hold'em payouts and rules" class="header-paytable-grid">
+<span>Starting wager</span><strong>1 Ante + 1 Blind</strong>
+<span>Before the flop</span><strong>Check or Play 3x / 4x</strong>
+<span>After the flop</span><strong>Check or Play 2x</strong>
+<span>After the river</span><strong>Play 1x or Fold</strong>
 <span>Dealer qualifies</span><strong>Pair or better</strong>
 <span>Royal Flush</span><strong>500 to 1</strong>
 <span>Straight Flush</span><strong>50 to 1</strong>
@@ -48,21 +52,14 @@
 </nav>
 <section class="panel play-panel" id="playPanel">
 <div class="lir-table uth-table">
-<div aria-hidden="true" class="lir-table-marking uth-table-marking">
-<svg viewBox="0 0 650 840" preserveAspectRatio="none" focusable="false">
-<path class="felt-wedge-fill" d="M92 560 C220 590 430 590 558 560 L642 840 L8 840 Z" fill="#f8efd0" fill-opacity="0.012"></path>
-<path class="felt-wedge-line" d="M-18 545 C170 585 480 585 668 545" fill="none" stroke="#f8efd0" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"></path>
-<path class="felt-wedge-line" d="M92 560 L8 840" fill="none" stroke="#f8efd0" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"></path>
-<path class="felt-wedge-line" d="M558 560 L642 840" fill="none" stroke="#f8efd0" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"></path>
-</svg>
-</div>
+
 <div class="lir-wordmark"><span>CASA DEL JEFE</span><small>THE ULTIMATE HOLD’EM PARLOR</small></div>
 <div aria-label="Play statistics" class="play-topline lir-topline">
 <div><small>Balance</small><strong id="playBalance">0 units</strong></div>
 <div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator"></span></span></div>
 <div><small>Bet</small><strong>2 units</strong></div>
 </div>
-<div class="lir-zone dealer-zone yellow-card-zone">
+<div class="lir-zone dealer-zone red-card-zone">
 <div class="zone-label light">Dealer Cards</div>
 <div class="hand two-card-hand" id="playDealer"></div>
 </div>
@@ -114,6 +111,6 @@
 <footer><a class="footer-link" href="https://jliese916.github.io/"><img alt="" aria-hidden="true" src="./jefe-crest.svg"/>Return to Casa del Jefe</a></footer>
 </main>
 <script src="./poker-engine.js?v=1"></script>
-<script defer src="./app.js?v=1"></script>
+<script defer src="./app.js?v=2"></script>
 </body>
 </html>

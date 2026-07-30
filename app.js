@@ -8,6 +8,7 @@
   const $$ = selector => [...document.querySelectorAll(selector)];
   const STORAGE_KEY = "casaUltimateHoldemPlayV1";
   const SUIT_CLASSES = ["suit-hearts", "suit-diamonds", "suit-clubs", "suit-spades"];
+  const REVEAL_DELAY = 115;
 
   const el = {
     tabs: $$(".mode-tab"),
@@ -77,9 +78,9 @@
     return `${sign}${formatNumber(value)} ${Math.abs(value) === 1 ? "unit" : "units"}`;
   }
 
-  function cardElement(card, { back = false, placeholder = false } = {}) {
+  function cardElement(card, { back = false, placeholder = false, revealing = false } = {}) {
     const node = document.createElement("div");
-    node.className = `card${back ? " card-back" : ""}${placeholder ? " placeholder" : ""}`;
+    node.className = `card${back ? " card-back" : ""}${placeholder ? " placeholder" : ""}${revealing ? " card-revealing" : ""}`;
     if (placeholder) {
       node.textContent = "";
       node.setAttribute("aria-label", "Empty card slot");
@@ -97,13 +98,18 @@
     return node;
   }
 
-  function renderCardRow(container, cards, visibleCount, totalCount) {
+  function renderCardRow(container, cards, visibleCount, totalCount, revealKey = "", justRevealed = "") {
     container.replaceChildren();
     for (let i = 0; i < totalCount; i += 1) {
       const card = cards && cards[i];
+      const revealing = justRevealed === `${revealKey}:${i}`;
       if (!card) container.append(cardElement(null, { placeholder: true }));
-      else container.append(cardElement(card, { back: i >= visibleCount }));
+      else container.append(cardElement(card, { back: i >= visibleCount, revealing }));
     }
+  }
+
+  function sleep(milliseconds) {
+    return new Promise(resolve => window.setTimeout(resolve, milliseconds));
   }
 
   function newRound() {
@@ -115,6 +121,11 @@
       stage: "preflop",
       playMultiplier: 0,
       balanceBefore: state.play.balance,
+      boardVisible: 0,
+      dealerVisible: 0,
+      animating: false,
+      revealText: "",
+      justRevealed: "",
       completed: false,
       folded: false,
       result: null
@@ -130,7 +141,7 @@
   }
 
   function availableActions(round) {
-    if (!round || round.completed) return [];
+    if (!round || round.completed || round.animating) return [];
     if (round.stage === "preflop") return [
       { action: "check", key: "C", label: "Check" },
       { action: "raise3", key: "3", label: "Raise 3x" },
@@ -147,32 +158,49 @@
     return [];
   }
 
-  function takeAction(action) {
-    const round = state.play.round;
-    if (!round || round.completed) return;
-    const permitted = availableActions(round).some(item => item.action === action);
-    if (!permitted) return;
-
-    if (action === "check") {
-      round.stage = round.stage === "preflop" ? "flop" : "river";
+  async function revealTo(round, field, target, revealKey, message) {
+    round.animating = true;
+    round.revealText = message;
+    renderPlay();
+    while (round[field] < target) {
+      await sleep(REVEAL_DELAY);
+      if (state.play.round !== round) return false;
+      const nextIndex = round[field];
+      round[field] += 1;
+      round.justRevealed = `${revealKey}:${nextIndex}`;
       renderPlay();
-      return;
+      round.justRevealed = "";
     }
+    return true;
+  }
 
-    if (action === "fold") {
-      round.folded = true;
-      round.completed = true;
-      round.stage = "complete";
-      round.result = { net: state.play.balance - round.balanceBefore, winner: "fold" };
-      completeHand();
-      return;
-    }
+  async function revealFlop(round) {
+    if (!await revealTo(round, "boardVisible", 3, "board", "Dealing the flop...")) return;
+    round.stage = "flop";
+    round.animating = false;
+    round.revealText = "";
+    renderPlay();
+  }
 
-    const multipliers = { raise3: 3, raise4: 4, raise2: 2, call1: 1 };
-    const multiplier = multipliers[action];
+  async function revealTurnAndRiver(round) {
+    if (!await revealTo(round, "boardVisible", 5, "board", "Dealing the turn and river...")) return;
+    round.stage = "river";
+    round.animating = false;
+    round.revealText = "";
+    renderPlay();
+  }
+
+  async function resolveShowdown(round, multiplier) {
     round.playMultiplier = multiplier;
     state.play.balance -= multiplier;
     round.stage = "showdown";
+
+    if (round.boardVisible < 5) {
+      const message = round.boardVisible === 0 ? "Dealing the community cards..." : "Dealing the turn and river...";
+      if (!await revealTo(round, "boardVisible", 5, "board", message)) return;
+    }
+    if (!await revealTo(round, "dealerVisible", 2, "dealer", "Revealing the dealer cards...")) return;
+
     round.result = E.settleHand({
       playerCards: round.playerCards,
       dealerCards: round.dealerCards,
@@ -181,7 +209,47 @@
     });
     state.play.balance += round.result.returned;
     round.completed = true;
+    round.animating = false;
+    round.revealText = "";
+    round.stage = "complete";
     completeHand();
+  }
+
+  async function resolveFold(round) {
+    round.folded = true;
+    round.stage = "showdown";
+    if (!await revealTo(round, "dealerVisible", 2, "dealer", "Folded — revealing the dealer cards...")) return;
+    round.result = {
+      net: state.play.balance - round.balanceBefore,
+      winner: "fold",
+      dealer: E.evaluateSeven([...round.dealerCards, ...round.board])
+    };
+    round.completed = true;
+    round.animating = false;
+    round.revealText = "";
+    round.stage = "complete";
+    completeHand();
+  }
+
+  async function takeAction(action) {
+    const round = state.play.round;
+    if (!round || round.completed || round.animating) return;
+    const permitted = availableActions(round).some(item => item.action === action);
+    if (!permitted) return;
+
+    if (action === "check") {
+      if (round.stage === "preflop") await revealFlop(round);
+      else if (round.stage === "flop") await revealTurnAndRiver(round);
+      return;
+    }
+
+    if (action === "fold") {
+      await resolveFold(round);
+      return;
+    }
+
+    const multipliers = { raise3: 3, raise4: 4, raise2: 2, call1: 1 };
+    await resolveShowdown(round, multipliers[action]);
   }
 
   function completeHand() {
@@ -198,6 +266,7 @@
       const chip = document.createElement("span");
       chip.className = "uth-chip";
       chip.style.setProperty("--chip-index", String(i));
+      chip.style.setProperty("--chip-center", String((count - 1) / 2));
       chip.setAttribute("aria-hidden", "true");
       container.append(chip);
     }
@@ -214,12 +283,13 @@
 
   function messageForRound(round) {
     if (!round) return { text: "Press Deal to begin.", tone: "neutral" };
+    if (round.animating) return { text: round.revealText || "Revealing cards...", tone: "neutral" };
     if (!round.completed) {
       if (round.stage === "preflop") return { text: "Choose Check, Raise 3x, or Raise 4x.", tone: "neutral" };
       if (round.stage === "flop") return { text: "The flop is out. Choose Check or Raise 2x.", tone: "neutral" };
       if (round.stage === "river") return { text: "The board is complete. Call 1x or Fold.", tone: "neutral" };
     }
-    if (round.folded) return { text: `Folded. Ante and Blind lose. Net ${formatUnits(round.result.net, true)}.`, tone: "loss" };
+    if (round.folded) return { text: `Folded. Dealer had ${round.result.dealer.name}. Ante and Blind lose. Net ${formatUnits(round.result.net, true)}.`, tone: "loss" };
 
     const result = round.result;
     const qualification = result.dealerQualifies ? "Dealer qualifies." : "Dealer does not qualify; Ante pushes.";
@@ -261,16 +331,12 @@
   function renderPlay() {
     const p = state.play;
     const round = p.round;
-    let dealerVisible = 0;
-    let boardVisible = 0;
-    if (round) {
-      if (round.completed && !round.folded) dealerVisible = 2;
-      if (round.stage === "flop") boardVisible = 3;
-      else if (["river", "showdown", "complete"].includes(round.stage)) boardVisible = 5;
-    }
+    const dealerVisible = round ? round.dealerVisible : 0;
+    const boardVisible = round ? round.boardVisible : 0;
+    const justRevealed = round ? round.justRevealed : "";
 
-    renderCardRow(el.playDealer, round && round.dealerCards, dealerVisible, 2);
-    renderCardRow(el.playCommunity, round && round.board, boardVisible, 5);
+    renderCardRow(el.playDealer, round && round.dealerCards, dealerVisible, 2, "dealer", justRevealed);
+    renderCardRow(el.playCommunity, round && round.board, boardVisible, 5, "board", justRevealed);
     renderCardRow(el.playPlayer, round && round.playerCards, round ? 2 : 0, 2);
     renderWagers(round);
     renderActions(round);
@@ -367,6 +433,7 @@
   }
 
   function resetPlay() {
+    if (state.play.round && state.play.round.animating) return;
     state.play = emptyPlay();
     localStorage.removeItem(STORAGE_KEY);
     renderPlay();

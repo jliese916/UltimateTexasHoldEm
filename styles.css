@@ -2077,3 +2077,128 @@ footer{color:var(--casa-muted)}
   .uth-action-label{white-space:normal;line-height:1.1}
 }
 .legend-actual{background:#e3b94f!important}
+
+
+/* Ultimate Hold'em Parlor v2 refinements */
+.uth-table-marking{display:none!important}
+.uth-table>.uth-wager-layout,
+.uth-table>.lir-message,
+.uth-table>.uth-action-row,
+.uth-table>.table-hand-button{position:relative;z-index:2}
+
+.red-card-zone .card{
+  border-color:#dc4a55!important;
+  box-shadow:0 0 0 3px rgba(220,74,85,.13),0 5px 11px rgba(0,0,0,.24);
+}
+.red-card-zone .card.placeholder{background:rgba(255,255,255,.025);border-style:solid}
+
+.play-accuracy-stat .play-accuracy-line{
+  display:grid!important;
+  place-items:center!important;
+  min-height:1.45rem;
+}
+.play-accuracy-stat .play-decision-indicator{display:none!important}
+
+.uth-wager-layout{
+  grid-template-columns:100px 46px 100px;
+  column-gap:12px;
+}
+.uth-equals{
+  display:grid;
+  place-items:center;
+  justify-self:stretch;
+  width:100%;
+  text-align:center;
+}
+.uth-play-cell{justify-self:center}
+.uth-chip{
+  transform:translate(
+    calc((var(--chip-index) - var(--chip-center)) * 1.4px),
+    calc((var(--chip-center) - var(--chip-index)) * 5px)
+  );
+}
+
+.uth-action-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-width:128px;
+  min-height:46px;
+  margin:0;
+  padding:8px 10px;
+  border:1px solid rgba(216,181,100,.58);
+  border-radius:12px;
+  background:linear-gradient(180deg,#fffdf8,#eee4cb);
+  color:#203128;
+  font:inherit;
+  font-size:.86rem;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:inset 0 1px rgba(255,255,255,.72),0 3px 7px rgba(0,0,0,.22);
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.uth-action-button:hover:not(:disabled){
+  border-color:var(--casa-gold);
+  background:linear-gradient(180deg,#fffefb,#f4e8c9);
+  transform:none;
+}
+.uth-action-button:active:not(:disabled){
+  transform:translateY(1px);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.15);
+}
+.uth-action-button:focus-visible{
+  outline:3px solid rgba(241,217,146,.45);
+  outline-offset:2px;
+}
+.uth-action-key{
+  display:inline-grid;
+  place-items:center;
+  flex:0 0 auto;
+  width:25px;
+  height:25px;
+  border:1px solid rgba(255,255,255,.34);
+  border-radius:7px;
+  color:#fff;
+  font-size:.75rem;
+  font-weight:950;
+  line-height:1;
+  text-shadow:0 1px rgba(0,0,0,.2);
+  box-shadow:inset 0 1px rgba(255,255,255,.25),0 1px 3px rgba(0,0,0,.2);
+}
+.uth-action-label{
+  min-width:74px;
+  color:#203128;
+  font-size:.84rem;
+  font-weight:900;
+  text-align:left;
+  white-space:nowrap;
+}
+.action-check .uth-action-key,.action-call1 .uth-action-key{background:#23864b}
+.action-raise2 .uth-action-key,.action-raise3 .uth-action-key,.action-raise4 .uth-action-key{background:#a87318}
+.action-fold .uth-action-key{background:#b93b42;color:#fff;border-color:rgba(255,255,255,.34)}
+.action-raise3,.action-raise4,.action-raise2,.action-call1,.action-fold{
+  border-color:rgba(216,181,100,.58);
+  background:linear-gradient(180deg,#fffdf8,#eee4cb);
+}
+
+.card.card-revealing{animation:uthCardReveal .14s ease-out}
+@keyframes uthCardReveal{
+  from{transform:scale(.92);opacity:.7}
+  to{transform:scale(1);opacity:1}
+}
+@media(prefers-reduced-motion:reduce){.card.card-revealing{animation:none}}
+
+@media(max-width:560px){
+  .uth-wager-layout{grid-template-columns:82px 38px 82px;column-gap:8px}
+  .uth-action-button{min-width:101px;min-height:44px;padding:6px 7px;gap:6px;font-size:.76rem}
+  .uth-action-key{width:23px;height:23px;border-radius:6px;font-size:.7rem}
+  .uth-action-label{min-width:0;font-size:.76rem}
+}
+@media(max-width:380px){
+  .uth-wager-layout{grid-template-columns:74px 34px 74px;column-gap:5px}
+  .uth-action-button{min-width:92px;padding-inline:5px;font-size:.7rem}
+  .uth-action-key{width:21px;height:21px;font-size:.65rem}
+  .uth-action-label{font-size:.7rem;white-space:normal;line-height:1.1}
+}
