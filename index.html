@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<meta content="#07100d" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="Ultimate Hold'em Parlor" name="apple-mobile-web-app-title"/>
+<title>Casa del Jefe — The Ultimate Hold’em Parlor</title>
+<meta content="A polished Ultimate Texas Hold’em game simulator for practicing the core Ante, Blind, and Play wagering flow." name="description"/>
+<link href="./manifest.webmanifest" rel="manifest"/>
+<link href="./favicon-64.png" rel="icon" type="image/png"/>
+<link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="./styles.css?v=1" rel="stylesheet"/>
+</head>
+<body>
+<main class="app">
+<header class="castle-masthead">
+<div aria-hidden="true" class="castle-tower tower-left"><div class="tower-crenels"><i></i><i></i><i></i></div><span class="tower-suit heart">♥</span></div>
+<div class="castle-hall">
+<div aria-hidden="true" class="hall-crenels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<a aria-label="Return to Casa del Jefe" class="masthead-crest-link" href="https://jliese916.github.io/">
+<img alt="" aria-hidden="true" class="masthead-crest" src="./jefe-crest.svg"/>
+</a>
+<div class="castle-kicker">Casa del Jefe</div>
+<h1>The Ultimate Hold’em Parlor</h1>
+<details class="header-paytable" id="paytableDetails">
+<summary>Core game · equal Ante and Blind wagers</summary>
+<div aria-label="Ultimate Texas Hold'em Blind paytable" class="header-paytable-grid">
+<span>Dealer qualifies</span><strong>Pair or better</strong>
+<span>Royal Flush</span><strong>500 to 1</strong>
+<span>Straight Flush</span><strong>50 to 1</strong>
+<span>Four of a Kind</span><strong>10 to 1</strong>
+<span>Full House</span><strong>3 to 1</strong>
+<span>Flush</span><strong>3 to 2</strong>
+<span>Straight</span><strong>1 to 1</strong>
+<span>All other wins</span><strong>Blind pushes</strong>
+</div>
+</details>
+</div>
+<div aria-hidden="true" class="castle-tower tower-right"><div class="tower-crenels"><i></i><i></i><i></i></div><span class="tower-suit club">♣</span></div>
+</header>
+<div class="challenge-launch"><button aria-disabled="true" class="challenge-button challenge-coming-soon" id="challengeLaunch" title="Strategy scoring is under construction" type="button"><span>Take the</span><strong>El Jefe Challenge</strong></button></div>
+<nav aria-label="App mode" class="mode-tabs" id="modeTabs">
+<button aria-selected="true" class="mode-tab active" data-mode="play" type="button">Play</button>
+<button aria-selected="false" class="mode-tab" data-mode="train" type="button">Train</button>
+<button aria-selected="false" class="mode-tab" data-mode="lookup" type="button">Look Up</button>
+</nav>
+<section class="panel play-panel" id="playPanel">
+<div class="lir-table uth-table">
+<div aria-hidden="true" class="lir-table-marking uth-table-marking">
+<svg viewBox="0 0 650 840" preserveAspectRatio="none" focusable="false">
+<path class="felt-wedge-fill" d="M92 560 C220 590 430 590 558 560 L642 840 L8 840 Z" fill="#f8efd0" fill-opacity="0.012"></path>
+<path class="felt-wedge-line" d="M-18 545 C170 585 480 585 668 545" fill="none" stroke="#f8efd0" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"></path>
+<path class="felt-wedge-line" d="M92 560 L8 840" fill="none" stroke="#f8efd0" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"></path>
+<path class="felt-wedge-line" d="M558 560 L642 840" fill="none" stroke="#f8efd0" stroke-opacity="0.42" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+</div>
+<div class="lir-wordmark"><span>CASA DEL JEFE</span><small>THE ULTIMATE HOLD’EM PARLOR</small></div>
+<div aria-label="Play statistics" class="play-topline lir-topline">
+<div><small>Balance</small><strong id="playBalance">0 units</strong></div>
+<div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator"></span></span></div>
+<div><small>Bet</small><strong>2 units</strong></div>
+</div>
+<div class="lir-zone dealer-zone yellow-card-zone">
+<div class="zone-label light">Dealer Cards</div>
+<div class="hand two-card-hand" id="playDealer"></div>
+</div>
+<div class="lir-zone community-zone uth-community-zone yellow-card-zone">
+<div class="zone-label light">Community Cards</div>
+<div class="hand five-card-hand" id="playCommunity"></div>
+</div>
+<div class="lir-zone player-zone uth-player-zone">
+<div class="zone-label light">Player Cards</div>
+<div class="hand two-card-hand" id="playPlayer"></div>
+</div>
+<div aria-label="Ante, Blind, and Play wagers" class="uth-wager-layout">
+<div class="uth-wager-cell uth-ante-cell"><div class="uth-wager-spot" id="anteSpot"><span>Ante</span><div class="uth-chip-stack" id="anteChips"></div></div></div>
+<div aria-hidden="true" class="uth-equals">=</div>
+<div class="uth-wager-cell uth-blind-cell"><div class="uth-wager-spot" id="blindSpot"><span>Blind</span><div class="uth-chip-stack" id="blindChips"></div></div></div>
+<div class="uth-wager-cell uth-play-cell"><div class="uth-wager-spot" id="playSpot"><span>Play</span><div class="uth-chip-stack" id="playChips"></div></div></div>
+</div>
+<div aria-live="polite" class="play-message lir-message uth-message" id="playMessage">Press Deal to begin.</div>
+<div aria-label="Available actions" class="uth-action-row" id="playActions"></div>
+<button class="deal-button table-hand-button uth-deal-button" id="playDeal" type="button">Deal</button>
+</div>
+<section class="balance-chart-card">
+<div class="balance-chart-heading"><span>Bankroll history</span><small id="playChartSummary">0 completed hands</small></div>
+<div class="balance-chart-legend"><span><i class="legend-line legend-actual"></i>Your play</span></div>
+<div class="chart-delta-pill" id="playDeltaSummary">Session result: 0 units</div>
+<canvas aria-label="Line chart showing your balance" class="balance-chart" id="playBalanceChart" role="img"></canvas>
+</section>
+<section aria-label="Session summary and controls" class="session-hub">
+<div class="session-hub-heading"><div><strong>Session summary</strong><small>Strategy scoring will be added after the optimal-play data is ready.</small></div><button class="danger-link session-reset-button" id="resetPlay" type="button">Reset session</button></div>
+<div class="uth-session-stats"><div><small>Completed hands</small><strong id="completedHands">0</strong></div><div><small>Current result</small><strong id="sessionResult">0 units</strong></div></div>
+</section>
+</section>
+<section class="panel hidden construction-panel" id="trainPanel">
+<div class="construction-card">
+<div aria-hidden="true" class="construction-suits">♠ <span>♥</span> ♦ ♣</div>
+<div class="construction-kicker">Strategy engine pending</div>
+<h2>Train is under construction</h2>
+<p>Complete-hand strategy practice will be added when the optimal-play calculations are ready.</p>
+</div>
+</section>
+<section class="panel hidden construction-panel" id="lookupPanel">
+<div class="construction-card">
+<div aria-hidden="true" class="construction-suits">♠ <span>♥</span> ♦ ♣</div>
+<div class="construction-kicker">Strategy engine pending</div>
+<h2>Look Up is under construction</h2>
+<p>Card-by-card optimal action lookup will be added when the strategy dataset is complete.</p>
+</div>
+</section>
+<footer><a class="footer-link" href="https://jliese916.github.io/"><img alt="" aria-hidden="true" src="./jefe-crest.svg"/>Return to Casa del Jefe</a></footer>
+</main>
+<script src="./poker-engine.js?v=1"></script>
+<script defer src="./app.js?v=1"></script>
+</body>
+</html>

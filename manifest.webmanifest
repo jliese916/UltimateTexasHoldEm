@@ -1,0 +1,13 @@
+{
+  "name": "Casa del Jefe — The Ultimate Hold’em Parlor",
+  "short_name": "Ultimate Hold’em",
+  "description": "Core-game Ultimate Texas Hold’em simulator with Ante, Blind, and Play wagering.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#07100d",
+  "theme_color": "#07100d",
+  "icons": [
+    {"src":"./icon-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"./icon-512.png","sizes":"512x512","type":"image/png"}
+  ]
+}
