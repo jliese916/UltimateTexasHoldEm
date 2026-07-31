@@ -1,7 +1,7 @@
 "use strict";
-const CACHE = "casa-ultimate-holdem-v2";
+const CACHE = "casa-ultimate-holdem-v3";
 const ASSETS = [
-  "./", "./index.html", "./styles.css?v=2", "./poker-engine.js?v=1", "./app.js?v=2",
+  "./", "./index.html", "./styles.css?v=3", "./poker-engine.js?v=1", "./app.js?v=3",
   "./manifest.webmanifest", "./jefe-crest.svg", "./favicon-64.png",
   "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"
 ];

@@ -1,4 +1,4 @@
-# Casa del Jefe — The Ultimate Hold’em Parlor v2
+# Casa del Jefe — The Ultimate Hold’em Parlor v3
 
 A self-contained static browser app matching the visual language of the Casa del Jefe Let It Ride trainer.
 
@@ -19,4 +19,4 @@ A self-contained static browser app matching the visual language of the Casa del
 Open `index.html` directly, or serve the folder from a static web host.
 
 
-Version 2 adds centered wager stacks, a symmetric Play spot, red dealer outlines, gold action controls, and sequential card reveals.
+Version 3 replaces the simple sequential reveals with a quick live-dealer window-card animation: the flop fans from a three-card packet on the right, while the turn/river and dealer hand fan from two-card packets.

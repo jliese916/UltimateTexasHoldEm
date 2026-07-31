@@ -8,7 +8,9 @@
   const $$ = selector => [...document.querySelectorAll(selector)];
   const STORAGE_KEY = "casaUltimateHoldemPlayV1";
   const SUIT_CLASSES = ["suit-hearts", "suit-diamonds", "suit-clubs", "suit-spades"];
-  const REVEAL_DELAY = 115;
+  const WINDOW_PAUSE = 78;
+  const DEAL_SLIDE_DURATION = 175;
+  const DEAL_SETTLE_DELAY = 18;
 
   const el = {
     tabs: $$(".mode-tab"),
@@ -98,18 +100,49 @@
     return node;
   }
 
-  function renderCardRow(container, cards, visibleCount, totalCount, revealKey = "", justRevealed = "") {
+  function renderCardRow(container, cards, visibleCount, totalCount) {
     container.replaceChildren();
     for (let i = 0; i < totalCount; i += 1) {
       const card = cards && cards[i];
-      const revealing = justRevealed === `${revealKey}:${i}`;
       if (!card) container.append(cardElement(null, { placeholder: true }));
-      else container.append(cardElement(card, { back: i >= visibleCount, revealing }));
+      else container.append(cardElement(card, { back: i >= visibleCount }));
     }
   }
 
-  function sleep(milliseconds) {
-    return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+  function mappedBoardCards(board) {
+    return board ? [board[3], board[4], board[0], board[1], board[2]] : null;
+  }
+
+  function renderDealerRow(round) {
+    const cards = round && round.dealerCards;
+    const visibleCount = round ? round.dealerVisible : 0;
+    const hiddenSlots = new Set(round ? round.dealerHiddenSlots : []);
+    el.playDealer.replaceChildren();
+    for (let i = 0; i < 2; i += 1) {
+      const card = cards && cards[i];
+      const node = !card
+        ? cardElement(null, { placeholder: true })
+        : cardElement(card, { back: i >= visibleCount });
+      if (hiddenSlots.has(i)) node.classList.add("uth-deal-hidden");
+      el.playDealer.append(node);
+    }
+  }
+
+  function renderCommunityRow(round) {
+    const cards = mappedBoardCards(round && round.board);
+    const visibleSlots = new Set(
+      !round ? [] : round.boardVisible >= 5 ? [0, 1, 2, 3, 4] : round.boardVisible >= 3 ? [2, 3, 4] : []
+    );
+    const hiddenSlots = new Set(round ? round.boardHiddenSlots : []);
+    el.playCommunity.replaceChildren();
+    for (let i = 0; i < 5; i += 1) {
+      const card = cards && cards[i];
+      const node = !card
+        ? cardElement(null, { placeholder: true })
+        : cardElement(card, { back: !visibleSlots.has(i) });
+      if (hiddenSlots.has(i)) node.classList.add("uth-deal-hidden");
+      el.playCommunity.append(node);
+    }
   }
 
   function newRound() {
@@ -123,9 +156,10 @@
       balanceBefore: state.play.balance,
       boardVisible: 0,
       dealerVisible: 0,
+      boardHiddenSlots: [],
+      dealerHiddenSlots: [],
       animating: false,
       revealText: "",
-      justRevealed: "",
       completed: false,
       folded: false,
       result: null
@@ -158,36 +192,108 @@
     return [];
   }
 
-  async function revealTo(round, field, target, revealKey, message) {
+  function sleep(milliseconds) {
+    return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+  }
+
+  function nextFrame() {
+    return new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+  }
+
+  function pinDealCard(node, slot) {
+    node.style.left = `${slot.offsetLeft}px`;
+    node.style.top = `${slot.offsetTop}px`;
+    node.style.width = `${slot.offsetWidth}px`;
+    node.style.height = `${slot.offsetHeight}px`;
+  }
+
+  async function animateDealPacket(round, { container, cards, targetSlots, hiddenField, message }) {
     round.animating = true;
     round.revealText = message;
+    round[hiddenField] = [...targetSlots];
     renderPlay();
-    while (round[field] < target) {
-      await sleep(REVEAL_DELAY);
-      if (state.play.round !== round) return false;
-      const nextIndex = round[field];
-      round[field] += 1;
-      round.justRevealed = `${revealKey}:${nextIndex}`;
-      renderPlay();
-      round.justRevealed = "";
-    }
+    await nextFrame();
+    if (state.play.round !== round) return false;
+
+    const slots = [...container.children];
+    const stackSlot = slots[targetSlots[targetSlots.length - 1]];
+    if (!stackSlot) return false;
+
+    const packet = cards.map((card, index) => {
+      const node = cardElement(card);
+      node.classList.add("uth-deal-card");
+      node.style.zIndex = String(30 - index);
+      pinDealCard(node, stackSlot);
+      container.append(node);
+      return node;
+    });
+
+    await sleep(WINDOW_PAUSE);
+    if (state.play.round !== round) return false;
+
+    packet.forEach((node, index) => {
+      node.style.transition = `left ${DEAL_SLIDE_DURATION}ms cubic-bezier(.2,.82,.25,1), top ${DEAL_SLIDE_DURATION}ms cubic-bezier(.2,.82,.25,1)`;
+      pinDealCard(node, slots[targetSlots[index]]);
+    });
+
+    await sleep(DEAL_SLIDE_DURATION + DEAL_SETTLE_DELAY);
+    if (state.play.round !== round) return false;
+    round[hiddenField] = [];
     return true;
   }
 
   async function revealFlop(round) {
-    if (!await revealTo(round, "boardVisible", 3, "board", "Dealing the flop...")) return;
-    round.stage = "flop";
-    round.animating = false;
-    round.revealText = "";
-    renderPlay();
+    const preservedStage = round.stage;
+    const okay = await animateDealPacket(round, {
+      container: el.playCommunity,
+      cards: round.board.slice(0, 3),
+      targetSlots: [2, 3, 4],
+      hiddenField: "boardHiddenSlots",
+      message: "Dealing the flop..."
+    });
+    if (!okay) return false;
+    round.boardVisible = 3;
+    round.stage = preservedStage === "showdown" ? "showdown" : "flop";
+    if (preservedStage !== "showdown") {
+      round.animating = false;
+      round.revealText = "";
+      renderPlay();
+    }
+    return true;
   }
 
   async function revealTurnAndRiver(round) {
-    if (!await revealTo(round, "boardVisible", 5, "board", "Dealing the turn and river...")) return;
-    round.stage = "river";
-    round.animating = false;
-    round.revealText = "";
+    const preservedStage = round.stage;
+    const okay = await animateDealPacket(round, {
+      container: el.playCommunity,
+      cards: round.board.slice(3, 5),
+      targetSlots: [0, 1],
+      hiddenField: "boardHiddenSlots",
+      message: "Dealing the turn and river..."
+    });
+    if (!okay) return false;
+    round.boardVisible = 5;
+    round.stage = preservedStage === "showdown" ? "showdown" : "river";
+    if (preservedStage !== "showdown") {
+      round.animating = false;
+      round.revealText = "";
+      renderPlay();
+    }
+    return true;
+  }
+
+  async function revealDealer(round, message = "Revealing the dealer cards...") {
+    const okay = await animateDealPacket(round, {
+      container: el.playDealer,
+      cards: round.dealerCards,
+      targetSlots: [0, 1],
+      hiddenField: "dealerHiddenSlots",
+      message
+    });
+    if (!okay) return false;
+    round.dealerVisible = 2;
     renderPlay();
+    return true;
   }
 
   async function resolveShowdown(round, multiplier) {
@@ -195,11 +301,9 @@
     state.play.balance -= multiplier;
     round.stage = "showdown";
 
-    if (round.boardVisible < 5) {
-      const message = round.boardVisible === 0 ? "Dealing the community cards..." : "Dealing the turn and river...";
-      if (!await revealTo(round, "boardVisible", 5, "board", message)) return;
-    }
-    if (!await revealTo(round, "dealerVisible", 2, "dealer", "Revealing the dealer cards...")) return;
+    if (round.boardVisible < 3 && !await revealFlop(round)) return;
+    if (round.boardVisible < 5 && !await revealTurnAndRiver(round)) return;
+    if (!await revealDealer(round)) return;
 
     round.result = E.settleHand({
       playerCards: round.playerCards,
@@ -218,7 +322,7 @@
   async function resolveFold(round) {
     round.folded = true;
     round.stage = "showdown";
-    if (!await revealTo(round, "dealerVisible", 2, "dealer", "Folded — revealing the dealer cards...")) return;
+    if (!await revealDealer(round, "Folded — revealing the dealer cards...")) return;
     round.result = {
       net: state.play.balance - round.balanceBefore,
       winner: "fold",
@@ -331,12 +435,8 @@
   function renderPlay() {
     const p = state.play;
     const round = p.round;
-    const dealerVisible = round ? round.dealerVisible : 0;
-    const boardVisible = round ? round.boardVisible : 0;
-    const justRevealed = round ? round.justRevealed : "";
-
-    renderCardRow(el.playDealer, round && round.dealerCards, dealerVisible, 2, "dealer", justRevealed);
-    renderCardRow(el.playCommunity, round && round.board, boardVisible, 5, "board", justRevealed);
+    renderDealerRow(round);
+    renderCommunityRow(round);
     renderCardRow(el.playPlayer, round && round.playerCards, round ? 2 : 0, 2);
     renderWagers(round);
     renderActions(round);

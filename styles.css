@@ -2202,3 +2202,22 @@ footer{color:var(--casa-muted)}
   .uth-action-key{width:21px;height:21px;font-size:.65rem}
   .uth-action-label{font-size:.7rem;white-space:normal;line-height:1.1}
 }
+
+
+/* Ultimate Hold'em Parlor v3 live-dealer reveal choreography */
+.uth-table .hand{position:relative}
+.card.uth-deal-hidden{
+  opacity:0!important;
+  visibility:hidden!important;
+}
+.card.uth-deal-card{
+  position:absolute!important;
+  margin:0!important;
+  pointer-events:none!important;
+  cursor:default!important;
+  will-change:left,top;
+  transition:none;
+}
+@media(prefers-reduced-motion:reduce){
+  .card.uth-deal-card{transition:none!important}
+}
