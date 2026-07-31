@@ -1,4 +1,4 @@
-# Casa del Jefe — The Ultimate Hold’em Parlor v4
+# Casa del Jefe — The Ultimate Hold’em Parlor v5
 
 A self-contained static browser app matching the visual language of the Casa del Jefe Let It Ride trainer.
 
@@ -22,3 +22,6 @@ Open `index.html` directly, or serve the folder from a static web host.
 Version 3 replaces the simple sequential reveals with a quick live-dealer window-card animation: the flop fans from a three-card packet on the right, while the turn/river and dealer hand fan from two-card packets.
 
 Version 4 keeps the red dealer and yellow community outlines fixed on the felt during all deal animations, uses one clean colored outline per slot, and shortens the table labels to Dealer, Community, and Player.
+
+
+Version 5 isolates each reveal packet so only the cards currently being dealt are replaced or animated. Dealer cards, unrevealed board cards, prior community cards, and player cards keep their original DOM nodes and remain visually fixed until their own action.

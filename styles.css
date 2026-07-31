@@ -2278,3 +2278,10 @@ footer{color:var(--casa-muted)}
   .uth-community-slot{width:57px;height:79px}
   .uth-dealer-slot{width:62px;height:85px}
 }
+
+/* Ultimate Hold'em Parlor v5: isolate packet motion */
+.uth-table .uth-card-slot>.card:not(.uth-deal-card){
+  transition:none!important;
+  animation:none!important;
+  transform:none!important;
+}

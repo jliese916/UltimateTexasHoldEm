@@ -221,13 +221,21 @@
     round.animating = true;
     round.revealText = message;
     round[hiddenField] = [...targetSlots];
-    renderPlay();
-    await nextFrame();
-    if (state.play.round !== round) return false;
 
+    // Keep every inactive card node in place. Only the cards in this packet are
+    // hidden and replaced, which prevents unrelated rows or slots from moving.
+    renderPlayControls(round);
     const slots = [...container.children];
     const stackSlot = slots[targetSlots[targetSlots.length - 1]];
     if (!stackSlot) return false;
+
+    targetSlots.forEach(index => {
+      const card = slots[index] && slots[index].querySelector(".card");
+      if (card) card.classList.add("uth-deal-hidden");
+    });
+
+    await nextFrame();
+    if (state.play.round !== round) return false;
 
     const packet = cards.map((card, index) => {
       const node = cardElement(card);
@@ -248,6 +256,14 @@
 
     await sleep(DEAL_SLIDE_DURATION + DEAL_SETTLE_DELAY);
     if (state.play.round !== round) return false;
+
+    // Put the final face-up cards underneath the animated packet first, then
+    // remove the packet. The swap is visually seamless and leaves all other
+    // card elements completely untouched.
+    targetSlots.forEach((slotIndex, cardIndex) => {
+      slots[slotIndex].replaceChildren(cardElement(cards[cardIndex]));
+    });
+    packet.forEach(node => node.remove());
     round[hiddenField] = [];
     return true;
   }
@@ -267,7 +283,7 @@
     if (preservedStage !== "showdown") {
       round.animating = false;
       round.revealText = "";
-      renderPlay();
+      renderPlayControls(round);
     }
     return true;
   }
@@ -287,7 +303,7 @@
     if (preservedStage !== "showdown") {
       round.animating = false;
       round.revealText = "";
-      renderPlay();
+      renderPlayControls(round);
     }
     return true;
   }
@@ -302,7 +318,6 @@
     });
     if (!okay) return false;
     round.dealerVisible = 2;
-    renderPlay();
     return true;
   }
 
@@ -310,6 +325,8 @@
     round.playMultiplier = multiplier;
     state.play.balance -= multiplier;
     round.stage = "showdown";
+    renderWagers(round);
+    renderPlayStats();
 
     if (round.boardVisible < 3 && !await revealFlop(round)) return;
     if (round.boardVisible < 5 && !await revealTurnAndRiver(round)) return;
@@ -371,7 +388,7 @@
     state.play.history.push(state.play.balance);
     if (state.play.history.length > 301) state.play.history.shift();
     savePlay();
-    renderPlay();
+    renderPlayChrome(state.play.round);
   }
 
   function renderChipStack(container, count) {
@@ -442,28 +459,42 @@
     });
   }
 
-  function renderPlay() {
-    const p = state.play;
-    const round = p.round;
-    renderDealerRow(round);
-    renderCommunityRow(round);
-    renderCardRow(el.playPlayer, round && round.playerCards, round ? 2 : 0, 2);
-    renderWagers(round);
-    renderActions(round);
-
+  function renderPlayMessage(round) {
     const message = messageForRound(round);
     el.playMessage.textContent = message.text;
     el.playMessage.classList.remove("win", "loss");
     if (message.tone !== "neutral") el.playMessage.classList.add(message.tone);
+  }
 
+  function renderPlayControls(round) {
+    renderActions(round);
+    renderPlayMessage(round);
+    el.playDeal.disabled = Boolean(round && !round.completed);
+    el.playDeal.textContent = round && round.completed ? "Deal Again" : "Deal";
+  }
+
+  function renderPlayStats() {
+    const p = state.play;
     el.playBalance.textContent = formatUnits(p.balance);
     el.completedHands.textContent = String(p.hands);
     el.sessionResult.textContent = formatUnits(p.balance, p.balance > 0);
     el.playChartSummary.textContent = `${p.hands} completed ${p.hands === 1 ? "hand" : "hands"}`;
     el.playDeltaSummary.textContent = `Session result: ${formatUnits(p.balance, p.balance > 0)}`;
-    el.playDeal.disabled = Boolean(round && !round.completed);
-    el.playDeal.textContent = round && round.completed ? "Deal Again" : "Deal";
     requestAnimationFrame(drawBalanceChart);
+  }
+
+  function renderPlayChrome(round) {
+    renderWagers(round);
+    renderPlayControls(round);
+    renderPlayStats();
+  }
+
+  function renderPlay() {
+    const round = state.play.round;
+    renderDealerRow(round);
+    renderCommunityRow(round);
+    renderCardRow(el.playPlayer, round && round.playerCards, round ? 2 : 0, 2);
+    renderPlayChrome(round);
   }
 
   function drawBalanceChart() {
