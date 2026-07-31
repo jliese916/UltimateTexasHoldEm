@@ -113,6 +113,13 @@
     return board ? [board[3], board[4], board[0], board[1], board[2]] : null;
   }
 
+  function framedCardSlot(cardNode, slotClass) {
+    const slot = document.createElement("div");
+    slot.className = `uth-card-slot ${slotClass}`;
+    slot.append(cardNode);
+    return slot;
+  }
+
   function renderDealerRow(round) {
     const cards = round && round.dealerCards;
     const visibleCount = round ? round.dealerVisible : 0;
@@ -124,7 +131,7 @@
         ? cardElement(null, { placeholder: true })
         : cardElement(card, { back: i >= visibleCount });
       if (hiddenSlots.has(i)) node.classList.add("uth-deal-hidden");
-      el.playDealer.append(node);
+      el.playDealer.append(framedCardSlot(node, "uth-dealer-slot"));
     }
   }
 
@@ -141,7 +148,7 @@
         ? cardElement(null, { placeholder: true })
         : cardElement(card, { back: !visibleSlots.has(i) });
       if (hiddenSlots.has(i)) node.classList.add("uth-deal-hidden");
-      el.playCommunity.append(node);
+      el.playCommunity.append(framedCardSlot(node, "uth-community-slot"));
     }
   }
 
@@ -201,10 +208,13 @@
   }
 
   function pinDealCard(node, slot) {
-    node.style.left = `${slot.offsetLeft}px`;
-    node.style.top = `${slot.offsetTop}px`;
-    node.style.width = `${slot.offsetWidth}px`;
-    node.style.height = `${slot.offsetHeight}px`;
+    const target = slot.classList.contains("uth-card-slot") ? slot.querySelector(".card") : slot;
+    const left = slot.offsetLeft + (target && target !== slot ? target.offsetLeft : 0);
+    const top = slot.offsetTop + (target && target !== slot ? target.offsetTop : 0);
+    node.style.left = `${left}px`;
+    node.style.top = `${top}px`;
+    node.style.width = `${target ? target.offsetWidth : slot.offsetWidth}px`;
+    node.style.height = `${target ? target.offsetHeight : slot.offsetHeight}px`;
   }
 
   async function animateDealPacket(round, { container, cards, targetSlots, hiddenField, message }) {

@@ -2221,3 +2221,60 @@ footer{color:var(--casa-muted)}
 @media(prefers-reduced-motion:reduce){
   .card.uth-deal-card{transition:none!important}
 }
+
+
+/* Ultimate Hold'em Parlor v4: fixed felt card frames */
+.uth-card-slot{
+  position:relative;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  padding:3px;
+  border:2px solid;
+  border-radius:14px;
+  background:transparent;
+  box-shadow:0 1px 0 rgba(255,255,255,.05),0 2px 5px rgba(0,0,0,.16);
+}
+.uth-community-slot{
+  width:clamp(58px,calc(14.2vw + 10px),77px);
+  height:clamp(82px,calc(21.4vw + 10px),107px);
+  border-color:#e9cc55;
+}
+.uth-dealer-slot{
+  width:clamp(64px,calc(16vw + 10px),82px);
+  height:clamp(90px,calc(23.2vw + 10px),114px);
+  border-color:#dc4a55;
+}
+.uth-table .uth-card-slot>.card{
+  width:100%;
+  height:100%;
+  margin:0!important;
+  outline:0!important;
+  outline-offset:0!important;
+  border-color:#d8ccb0!important;
+  box-shadow:0 5px 11px rgba(0,0,0,.24)!important;
+}
+.uth-table .uth-card-slot>.card.placeholder{
+  border-color:transparent!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.uth-table .uth-card-slot>.card.card-back{
+  border-color:#c9a23a!important;
+}
+.uth-table .yellow-card-zone>.hand>.uth-deal-card,
+.uth-table .red-card-zone>.hand>.uth-deal-card{
+  margin:0!important;
+  outline:0!important;
+  outline-offset:0!important;
+  border-color:#d8ccb0!important;
+  box-shadow:0 5px 11px rgba(0,0,0,.24)!important;
+}
+@media(max-width:560px){
+  .uth-community-slot{width:61px;height:84px;border-radius:12px}
+  .uth-dealer-slot{width:66px;height:90px;border-radius:13px}
+}
+@media(max-width:380px){
+  .uth-community-slot{width:57px;height:79px}
+  .uth-dealer-slot{width:62px;height:85px}
+}
