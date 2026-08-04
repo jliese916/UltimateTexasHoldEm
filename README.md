@@ -25,3 +25,10 @@ Version 4 keeps the red dealer and yellow community outlines fixed on the felt d
 
 
 Version 5 isolates each reveal packet so only the cards currently being dealt are replaced or animated. Dealer cards, unrevealed board cards, prior community cards, and player cards keep their original DOM nodes and remain visually fixed until their own action.
+
+
+## v6 consistency update
+- Standardized Bankroll History and Session Review panels.
+- Added win/push/loss tracking with saved-session migration.
+- Added mobile-safe chart rendering and user-controlled update notices.
+- Optimal-play comparison remains intentionally pending until the strategy dataset is complete.

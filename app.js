@@ -1,6 +1,7 @@
 "use strict";
 
 (() => {
+  const APP_VERSION = "6";
   const E = window.UltimateHoldemEngine;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
 
@@ -26,12 +27,18 @@
     playActions: $("#playActions"),
     playDeal: $("#playDeal"),
     playChart: $("#playBalanceChart"),
-    playChartSummary: $("#playChartSummary"),
     playDeltaSummary: $("#playDeltaSummary"),
     completedHands: $("#completedHands"),
-    sessionResult: $("#sessionResult"),
-    resetPlay: $("#resetPlay")
+    playWins: $("#playWins"),
+    playPushes: $("#playPushes"),
+    playLosses: $("#playLosses"),
+    resetPlay: $("#resetPlay"),
+    updateNotice: $("#updateNotice"),
+    reloadUpdate: $("#reloadUpdate")
   };
+
+  let balanceChartFrame = 0;
+  let lastBalanceChartSignature = "";
 
   const state = {
     mode: "play",
@@ -39,18 +46,40 @@
   };
 
   function emptyPlay() {
-    return { balance: 0, hands: 0, history: [0], round: null };
+    return { balance: 0, hands: 0, wins: 0, pushes: 0, losses: 0, history: [0], round: null };
+  }
+
+  function countOutcomesFromHistory(history, hands) {
+    const values = Array.isArray(history) ? history.map(Number).filter(Number.isFinite) : [];
+    const count = Math.min(Math.max(0, Number(hands) || 0), Math.max(0, values.length - 1));
+    let wins = 0;
+    let pushes = 0;
+    let losses = 0;
+    for (let index = 1; index <= count; index += 1) {
+      const change = values[index] - values[index - 1];
+      if (change > 1e-9) wins += 1;
+      else if (change < -1e-9) losses += 1;
+      else pushes += 1;
+    }
+    return { wins, pushes, losses };
   }
 
   function loadPlay() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (!saved || typeof saved !== "object") return emptyPlay();
+      const history = Array.isArray(saved.history) && saved.history.length ? saved.history.map(Number) : [0];
+      const hands = Number(saved.hands) || 0;
+      const migratedOutcomes = countOutcomesFromHistory(history, hands);
+      const hasSavedOutcomes = [saved.wins, saved.pushes, saved.losses].every(value => Number.isFinite(Number(value)));
       return {
         ...emptyPlay(),
         balance: Number(saved.balance) || 0,
-        hands: Number(saved.hands) || 0,
-        history: Array.isArray(saved.history) && saved.history.length ? saved.history.map(Number) : [0]
+        hands,
+        wins: hasSavedOutcomes ? Number(saved.wins) : migratedOutcomes.wins,
+        pushes: hasSavedOutcomes ? Number(saved.pushes) : migratedOutcomes.pushes,
+        losses: hasSavedOutcomes ? Number(saved.losses) : migratedOutcomes.losses,
+        history
       };
     } catch (error) {
       console.warn("Could not load Ultimate Hold'em session.", error);
@@ -63,6 +92,9 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         balance: state.play.balance,
         hands: state.play.hands,
+        wins: state.play.wins,
+        pushes: state.play.pushes,
+        losses: state.play.losses,
         history: state.play.history.slice(-301)
       }));
     } catch (error) {
@@ -384,11 +416,17 @@
   }
 
   function completeHand() {
-    state.play.hands += 1;
-    state.play.history.push(state.play.balance);
-    if (state.play.history.length > 301) state.play.history.shift();
+    const p = state.play;
+    const round = p.round;
+    const net = Number(round && round.result && round.result.net);
+    p.hands += 1;
+    if (Number.isFinite(net) && net > 1e-9) p.wins += 1;
+    else if (Number.isFinite(net) && net < -1e-9) p.losses += 1;
+    else p.pushes += 1;
+    p.history.push(p.balance);
+    if (p.history.length > 301) p.history.shift();
     savePlay();
-    renderPlayChrome(state.play.round);
+    renderPlayChrome(round);
   }
 
   function renderChipStack(container, count) {
@@ -476,11 +514,14 @@
   function renderPlayStats() {
     const p = state.play;
     el.playBalance.textContent = formatUnits(p.balance);
+    el.playBalance.classList.toggle("positive", p.balance > 0);
+    el.playBalance.classList.toggle("negative", p.balance < 0);
     el.completedHands.textContent = String(p.hands);
-    el.sessionResult.textContent = formatUnits(p.balance, p.balance > 0);
-    el.playChartSummary.textContent = `${p.hands} completed ${p.hands === 1 ? "hand" : "hands"}`;
-    el.playDeltaSummary.textContent = `Session result: ${formatUnits(p.balance, p.balance > 0)}`;
-    requestAnimationFrame(drawBalanceChart);
+    el.playWins.textContent = String(p.wins);
+    el.playPushes.textContent = String(p.pushes);
+    el.playLosses.textContent = String(p.losses);
+    el.playDeltaSummary.textContent = "Optimal play pending";
+    scheduleBalanceChartDraw();
   }
 
   function renderPlayChrome(round) {
@@ -497,69 +538,102 @@
     renderPlayChrome(round);
   }
 
+  function scheduleBalanceChartDraw() {
+    if (balanceChartFrame) return;
+    balanceChartFrame = window.requestAnimationFrame(() => {
+      balanceChartFrame = 0;
+      drawBalanceChart();
+    });
+  }
+
   function drawBalanceChart() {
     const canvas = el.playChart;
     if (!canvas || canvas.offsetParent === null) return;
     const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
     const dpr = window.devicePixelRatio || 1;
     const width = Math.max(280, rect.width);
-    const height = Math.max(160, rect.height);
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
+    const height = Math.max(150, rect.height);
+    const pixelWidth = Math.round(width * dpr);
+    const pixelHeight = Math.round(height * dpr);
+    const values = state.play.history.length ? state.play.history : [0];
+    const signature = `${pixelWidth}x${pixelHeight}:${state.play.hands}:${state.play.balance}:${values.length}:${values[values.length - 1]}`;
+    if (signature === lastBalanceChartSignature) return;
+    lastBalanceChartSignature = signature;
+    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    const values = state.play.history.length ? state.play.history : [0];
     const min = Math.min(0, ...values);
     const max = Math.max(0, ...values);
     const spread = Math.max(4, max - min);
-    const low = min - spread * 0.18;
-    const high = max + spread * 0.18;
-    const left = 42;
-    const right = 14;
-    const top = 14;
-    const bottom = 27;
+    const low = min - spread * .18;
+    const high = max + spread * .18;
+    const left = 40, right = 12, top = 12, bottom = 12;
     const plotWidth = width - left - right;
     const plotHeight = height - top - bottom;
-    const xAt = index => left + (values.length === 1 ? 0 : (index / (values.length - 1)) * plotWidth);
-    const yAt = value => top + ((high - value) / (high - low || 1)) * plotHeight;
+    const xAt = index => left + (values.length === 1 ? 0 : index / (values.length - 1) * plotWidth);
+    const yAt = value => top + (high - value) / (high - low || 1) * plotHeight;
 
     ctx.font = "11px system-ui, sans-serif";
-    ctx.fillStyle = "rgba(232, 226, 207, .76)";
-    ctx.strokeStyle = "rgba(232, 226, 207, .14)";
+    ctx.fillStyle = "rgba(232,226,207,.72)";
+    ctx.strokeStyle = "rgba(232,226,207,.14)";
     ctx.lineWidth = 1;
-    const ticks = 4;
-    for (let i = 0; i <= ticks; i += 1) {
-      const value = high - ((high - low) * i) / ticks;
+    for (let i = 0; i <= 4; i += 1) {
+      const value = high - (high - low) * i / 4;
       const y = yAt(value);
       ctx.beginPath();
       ctx.moveTo(left, y);
       ctx.lineTo(width - right, y);
       ctx.stroke();
-      ctx.fillText(formatNumber(value), 5, y + 4);
+      ctx.fillText(String(Math.round(value)), 6, y + 4);
     }
 
-    ctx.strokeStyle = "#e3b94f";
-    ctx.lineWidth = 3;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
+    const zeroY = yAt(0);
+    ctx.save();
+    ctx.strokeStyle = "rgba(231,200,106,.4)";
+    ctx.setLineDash([5, 5]);
     ctx.beginPath();
-    values.forEach((value, index) => {
-      const x = xAt(index);
-      const y = yAt(value);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
+    ctx.moveTo(left, zeroY);
+    ctx.lineTo(width - right, zeroY);
     ctx.stroke();
+    ctx.restore();
+
+    const buildPath = () => {
+      ctx.beginPath();
+      values.forEach((value, index) => {
+        if (index === 0) ctx.moveTo(xAt(index), yAt(value));
+        else ctx.lineTo(xAt(index), yAt(value));
+      });
+    };
+
+    if (values.length > 1) {
+      const drawClippedLine = (clipTop, clipBottom, color) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, clipTop, width, Math.max(0, clipBottom - clipTop));
+        ctx.clip();
+        buildPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.restore();
+      };
+      drawClippedLine(0, zeroY, "#4ccf79");
+      drawClippedLine(zeroY, height, "#ff6b6b");
+    }
 
     const lastIndex = values.length - 1;
-    ctx.fillStyle = "#e3b94f";
+    const lastValue = values[lastIndex];
+    ctx.fillStyle = lastValue >= 0 ? "#4ccf79" : "#ff6b6b";
     ctx.beginPath();
-    ctx.arc(xAt(lastIndex), yAt(values[lastIndex]), 4, 0, Math.PI * 2);
+    ctx.arc(xAt(lastIndex), yAt(lastValue), 4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "rgba(232, 226, 207, .76)";
-    ctx.fillText("Hands", width - 44, height - 7);
+    canvas.setAttribute("aria-label", `Line chart showing your bankroll history. Current result: ${formatUnits(lastValue, lastValue > 0)}.`);
   }
 
   function setMode(mode) {
@@ -570,7 +644,7 @@
       tab.setAttribute("aria-selected", String(active));
     });
     Object.entries(el.panels).forEach(([name, panel]) => panel.classList.toggle("hidden", name !== mode));
-    if (mode === "play") requestAnimationFrame(drawBalanceChart);
+    if (mode === "play") scheduleBalanceChartDraw();
   }
 
   function resetPlay() {
@@ -583,7 +657,6 @@
   el.tabs.forEach(tab => tab.addEventListener("click", () => setMode(tab.dataset.mode)));
   el.playDeal.addEventListener("click", startPlayHand);
   el.resetPlay.addEventListener("click", resetPlay);
-  window.addEventListener("resize", () => requestAnimationFrame(drawBalanceChart));
   window.addEventListener("keydown", event => {
     if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
     const target = event.target;
@@ -603,7 +676,141 @@
   });
 
   renderPlay();
+
+  if ("ResizeObserver" in window && el.playChart) {
+    const chartObserver = new ResizeObserver(() => {
+      lastBalanceChartSignature = "";
+      scheduleBalanceChartDraw();
+    });
+    chartObserver.observe(el.playChart);
+  } else {
+    window.addEventListener("resize", () => {
+      lastBalanceChartSignature = "";
+      scheduleBalanceChartDraw();
+    }, { passive: true });
+  }
+
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(() => {}));
+    let waitingWorker = null;
+    let waitingRegistration = null;
+    let reloadingForUpdate = false;
+
+    const hideUpdateNotice = () => {
+      waitingWorker = null;
+      waitingRegistration = null;
+      if (el.updateNotice) el.updateNotice.classList.add("hidden");
+      if (el.reloadUpdate) {
+        el.reloadUpdate.disabled = false;
+        el.reloadUpdate.textContent = "Reload Now";
+      }
+    };
+
+    const workerVersion = worker => new Promise(resolve => {
+      if (!worker) {
+        resolve(null);
+        return;
+      }
+      const channel = new MessageChannel();
+      let settled = false;
+      const finish = value => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        resolve(value ? String(value) : null);
+      };
+      const timer = window.setTimeout(() => finish(null), 1200);
+      channel.port1.onmessage = event => finish(event.data && event.data.version);
+      try {
+        worker.postMessage({ type: "GET_VERSION" }, [channel.port2]);
+      } catch {
+        finish(null);
+      }
+    });
+
+    const numericVersion = value => {
+      const parsed = Number.parseInt(String(value || "").replace(/\D+/g, ""), 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const considerWaitingWorker = async (registration, worker) => {
+      if (!worker || worker.state !== "installed") return;
+      const version = await workerVersion(worker);
+      const pageVersion = numericVersion(APP_VERSION);
+      const candidateVersion = numericVersion(version);
+
+      if (candidateVersion === pageVersion) {
+        hideUpdateNotice();
+        worker.postMessage({ type: "SKIP_WAITING" });
+        return;
+      }
+      if (candidateVersion === null || (pageVersion !== null && candidateVersion < pageVersion)) {
+        hideUpdateNotice();
+        return;
+      }
+      if (!navigator.serviceWorker.controller || !el.updateNotice) return;
+      waitingWorker = worker;
+      waitingRegistration = registration;
+      el.updateNotice.classList.remove("hidden");
+    };
+
+    const watchedWorkers = new WeakSet();
+    const watchWorker = (registration, worker) => {
+      if (!worker || watchedWorkers.has(worker)) return;
+      watchedWorkers.add(worker);
+      const checkState = () => {
+        if (worker.state === "installed") considerWaitingWorker(registration, registration.waiting || worker);
+      };
+      worker.addEventListener("statechange", checkState);
+      checkState();
+    };
+
+    const watchRegistration = registration => {
+      if (registration.waiting) considerWaitingWorker(registration, registration.waiting);
+      watchWorker(registration, registration.installing);
+      registration.addEventListener("updatefound", () => watchWorker(registration, registration.installing));
+    };
+
+    const registerServiceWorker = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register(`./service-worker.js?v=${APP_VERSION}`, { updateViaCache: "none" });
+        watchRegistration(registration);
+        registration.update().catch(() => {});
+      } catch (error) {
+        console.warn("Could not register the Ultimate Texas Hold’em service worker.", error);
+      }
+    };
+
+    if (el.reloadUpdate) {
+      el.reloadUpdate.addEventListener("click", () => {
+        const worker = (waitingRegistration && waitingRegistration.waiting) || waitingWorker;
+        el.reloadUpdate.disabled = true;
+        el.reloadUpdate.textContent = "Reloading…";
+        if (!worker) {
+          window.location.reload();
+          return;
+        }
+        const reloadOnce = () => {
+          if (reloadingForUpdate) return;
+          reloadingForUpdate = true;
+          window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener("controllerchange", reloadOnce, { once: true });
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "activated") reloadOnce();
+        });
+        try {
+          worker.postMessage({ type: "SKIP_WAITING" });
+        } catch {
+          reloadOnce();
+          return;
+        }
+        window.setTimeout(reloadOnce, 2500);
+      });
+    }
+
+    window.addEventListener("load", () => {
+      if ("requestIdleCallback" in window) window.requestIdleCallback(registerServiceWorker, { timeout: 2500 });
+      else window.setTimeout(registerServiceWorker, 750);
+    }, { once: true });
   }
 })();

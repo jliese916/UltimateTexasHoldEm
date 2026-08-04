@@ -2285,3 +2285,55 @@ footer{color:var(--casa-muted)}
   animation:none!important;
   transform:none!important;
 }
+
+
+/* Ultimate Texas Hold'em v6: shared trainer consistency standard */
+#playPanel>.balance-card,
+#playPanel>.session-hub{
+  width:100%!important;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}
+.balance-card,.session-hub{
+  margin-top:14px;
+  padding:13px 14px;
+  border:1px solid rgba(201,162,58,.42);
+  border-radius:17px;
+  background:linear-gradient(155deg,rgba(23,74,53,.94),rgba(7,16,13,.98));
+  box-shadow:0 13px 34px rgba(0,0,0,.25);
+  color:var(--casa-cream);
+  text-align:left;
+}
+.balance-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;color:var(--casa-gold-soft)}
+.balance-heading span,.session-heading strong{font-size:.82rem;font-weight:900;letter-spacing:.055em;text-transform:uppercase}
+.chart-legend{display:flex;justify-content:center;gap:18px;margin:5px 0;color:var(--casa-muted);font-size:.74rem}
+.chart-legend span{display:inline-flex;align-items:center;gap:6px}
+.chart-legend i{display:inline-block;width:22px;height:3px;border-radius:99px}
+.legend-actual{background:linear-gradient(90deg,#4ccf79 0 50%,#ff6b6b 50% 100%)!important}
+.chart-pill{width:max-content;max-width:100%;margin:0 auto 5px;padding:4px 9px;border:1px solid rgba(201,162,58,.36);border-radius:999px;color:var(--casa-muted);font-size:.72rem;font-weight:850}
+.chart-pill.pending{border-style:dashed;color:var(--casa-muted)}
+.balance-chart{display:block;width:100%;height:160px;border-radius:9px;background:rgba(0,0,0,.15)!important;touch-action:pan-y}
+.session-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;color:var(--casa-gold-soft)}
+.session-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0 0}
+.session-stats>div{display:grid;gap:2px;padding:8px 4px;border:1px solid rgba(201,162,58,.2);border-radius:10px;background:rgba(0,0,0,.18);text-align:center}
+.session-stats small{color:var(--casa-muted);font-size:.65rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+.session-stats strong{color:var(--casa-cream)}
+.strategy-pending-note{margin:11px 0 0!important;padding-top:10px;border-top:1px solid rgba(201,162,58,.22);color:var(--casa-muted)!important;font-size:.78rem;text-align:center}
+.play-accuracy-line{display:grid!important;grid-template-columns:1.25rem auto 1.25rem!important;align-items:center!important;justify-content:center!important;column-gap:5px!important;min-height:1.25rem}
+.play-accuracy-line>strong{grid-column:2}
+.play-accuracy-line>.play-decision-indicator{grid-column:3}
+.play-decision-indicator{position:relative;font-size:0}
+.play-decision-indicator::before,.play-decision-indicator::after{content:"";position:absolute;left:50%;top:50%;border-radius:999px;background:#fff;transform:translate(-50%,-50%);opacity:0;pointer-events:none}
+.play-decision-indicator::before{width:.64rem;height:2px}
+.play-decision-indicator::after{width:2px;height:.64rem}
+.play-decision-indicator.visible::before{opacity:1}
+.play-decision-indicator.visible.correct::after{opacity:1}
+.footer-actions{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
+.update-notice{display:inline-flex;align-items:center;gap:9px;padding:7px 8px 7px 12px;border:1px solid rgba(216,181,100,.58);border-radius:13px;background:rgba(8,29,22,.94);box-shadow:0 7px 20px rgba(0,0,0,.2);color:var(--casa-cream);font-size:.74rem;font-weight:750}
+.update-button{min-height:34px;padding:6px 11px;border:1px solid var(--casa-gold);border-radius:9px;background:linear-gradient(145deg,var(--casa-gold-soft),var(--casa-gold));color:#132019;font-weight:900;cursor:pointer}
+.update-button:disabled{opacity:.55;cursor:wait}
+.update-notice.hidden{display:none!important}
+@media(max-width:480px){.footer-actions{align-items:stretch}.update-notice{width:min(100%,340px);justify-content:space-between;text-align:left}}
+@media(max-width:430px){.session-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:360px){.session-heading{display:grid}.session-reset-button{justify-self:start}}

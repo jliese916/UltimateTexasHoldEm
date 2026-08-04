@@ -11,7 +11,7 @@
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./favicon-64.png" rel="icon" type="image/png"/>
 <link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="./styles.css?v=5" rel="stylesheet"/>
+<link href="./styles.css?v=6" rel="stylesheet"/>
 </head>
 <body>
 <main class="app">
@@ -53,10 +53,10 @@
 <section class="panel play-panel" id="playPanel">
 <div class="lir-table uth-table">
 
-<div class="lir-wordmark"><span>CASA DEL JEFE</span><small>THE ULTIMATE HOLD’EM PARLOR</small></div>
+<div class="lir-wordmark"><span>CASA DEL JEFE</span><small>ULTIMATE TEXAS HOLD’EM</small></div>
 <div aria-label="Play statistics" class="play-topline lir-topline">
 <div><small>Balance</small><strong id="playBalance">0 units</strong></div>
-<div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator"></span></span></div>
+<div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="playDecisionIndicator"></span></span></div>
 <div><small>Bet</small><strong>2 units</strong></div>
 </div>
 <div class="lir-zone dealer-zone red-card-zone">
@@ -81,15 +81,21 @@
 <div aria-label="Available actions" class="uth-action-row" id="playActions"></div>
 <button class="deal-button table-hand-button uth-deal-button" id="playDeal" type="button">Deal</button>
 </div>
-<section class="balance-chart-card">
-<div class="balance-chart-heading"><span>Bankroll history</span><small id="playChartSummary">0 completed hands</small></div>
-<div class="balance-chart-legend"><span><i class="legend-line legend-actual"></i>Your play</span></div>
-<div class="chart-delta-pill" id="playDeltaSummary">Session result: 0 units</div>
-<canvas aria-label="Line chart showing your balance" class="balance-chart" id="playBalanceChart" role="img"></canvas>
+<section class="balance-card">
+<div class="balance-heading"><span>BANKROLL HISTORY</span></div>
+<div class="chart-legend" aria-hidden="true"><span><i class="legend-line legend-actual"></i>Your play</span></div>
+<div class="chart-pill pending" id="playDeltaSummary">Optimal play pending</div>
+<canvas aria-label="Line chart showing your bankroll history" class="balance-chart" id="playBalanceChart" role="img"></canvas>
 </section>
-<section aria-label="Session summary and controls" class="session-hub">
-<div class="session-hub-heading"><div><strong>Session summary</strong><small>Strategy scoring will be added after the optimal-play data is ready.</small></div><button class="danger-link session-reset-button" id="resetPlay" type="button">Reset session</button></div>
-<div class="uth-session-stats"><div><small>Completed hands</small><strong id="completedHands">0</strong></div><div><small>Current result</small><strong id="sessionResult">0 units</strong></div></div>
+<section aria-label="Session review and controls" class="session-hub">
+<div class="session-heading"><strong>SESSION REVIEW</strong><button class="danger-link session-reset-button" id="resetPlay" type="button">Reset session</button></div>
+<div class="session-stats">
+<div><small>Hands</small><strong id="completedHands">0</strong></div>
+<div><small>Wins</small><strong id="playWins">0</strong></div>
+<div><small>Pushes</small><strong id="playPushes">0</strong></div>
+<div><small>Losses</small><strong id="playLosses">0</strong></div>
+</div>
+<p class="strategy-pending-note">Optimal-play comparison and accuracy will appear when the strategy dataset is ready.</p>
 </section>
 </section>
 <section class="panel hidden construction-panel" id="trainPanel">
@@ -108,9 +114,17 @@
 <p>Card-by-card optimal action lookup will be added when the strategy dataset is complete.</p>
 </div>
 </section>
-<footer><a class="footer-link" href="https://jliese916.github.io/"><img alt="" aria-hidden="true" src="./jefe-crest.svg"/>Return to Casa del Jefe</a></footer>
+<footer>
+<div class="footer-actions">
+<a class="footer-link" href="https://jliese916.github.io/"><img alt="" aria-hidden="true" src="./jefe-crest.svg"/>Return to Casa del Jefe</a>
+<div class="update-notice hidden" id="updateNotice" role="status" aria-live="polite">
+<span>A new version of Ultimate Texas Hold’em is ready.</span>
+<button class="update-button" id="reloadUpdate" type="button">Reload Now</button>
+</div>
+</div>
+</footer>
 </main>
 <script src="./poker-engine.js?v=1"></script>
-<script defer src="./app.js?v=5"></script>
+<script defer src="./app.js?v=6"></script>
 </body>
 </html>
