@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "7";
+  const APP_VERSION = "10";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -47,35 +47,32 @@
     blindChips: $("#blindChips"),
     playChips: $("#playChips"),
     playMessage: $("#playMessage"),
-    playStrategyFeedback: $("#playStrategyFeedback"),
     playActions: $("#playActions"),
     playDeal: $("#playDeal"),
     playChart: $("#playBalanceChart"),
     playDeltaSummary: $("#playDeltaSummary"),
     completedHands: $("#completedHands"),
-    playPerfectHands: $("#playPerfectHands"),
     playWins: $("#playWins"),
     playPushes: $("#playPushes"),
     playLosses: $("#playLosses"),
+    playMistakeSummary: $("#playMistakeSummary"),
+    playMistakeList: $("#playMistakeList"),
     resetPlay: $("#resetPlay"),
 
     trainHands: $("#trainHands"),
     trainAccuracy: $("#trainAccuracy"),
-    trainStreet: $("#trainStreet"),
+    trainDecisionIndicator: $("#trainDecisionIndicator"),
     trainCommunity: $("#trainCommunity"),
     trainPlayer: $("#trainPlayer"),
     trainMessage: $("#trainMessage"),
     trainFeedback: $("#trainFeedback"),
     trainActions: $("#trainActions"),
     trainDeal: $("#trainDeal"),
-    trainCompletedHands: $("#trainCompletedHands"),
-    trainPerfectHands: $("#trainPerfectHands"),
-    trainPreflopErrors: $("#trainPreflopErrors"),
-    trainFlopErrors: $("#trainFlopErrors"),
-    trainRiverErrors: $("#trainRiverErrors"),
+    trainMistakeSummary: $("#trainMistakeSummary"),
+    trainMistakeList: $("#trainMistakeList"),
     resetTrain: $("#resetTrain"),
 
-    lookupStreetTabs: $$(".lookup-street"),
+    lookupStageLabel: $("#lookupStageLabel"),
     lookupBoardGroup: $("#lookupBoardGroup"),
     lookupBoardHelp: $("#lookupBoardHelp"),
     lookupPlayerSlots: $("#lookupPlayerSlots"),
@@ -85,11 +82,14 @@
     lookupSuitPicker: $("#lookupSuitPicker"),
     lookupRemove: $("#lookupRemove"),
     lookupClear: $("#lookupClear"),
+    lookupSearch: $("#lookupSearch"),
     lookupMessage: $("#lookupMessage"),
     lookupResult: $("#lookupResult"),
-    strategySelectorRow: $("#strategySelectorRow"),
-    lookupStrategy: $("#lookupStrategy"),
-    lookupStrategyResult: $("#lookupStrategyResult"),
+    lookupStrategyResults: $("#lookupStrategyResults"),
+    strategyGuideSelect: $("#strategyGuideSelect"),
+    guidePreflop: $("#guidePreflop"),
+    guideFlop: $("#guideFlop"),
+    guideRiver: $("#guideRiver"),
     preflopChartContainer: $("#preflopChartContainer"),
 
     updateNotice: $("#updateNotice"),
@@ -104,19 +104,19 @@
     play: loadPlay(),
     train: loadTrain(),
     lookup: {
-      street: "preflop",
       cards: Array(7).fill(null),
       activeSlot: 0,
-      pendingRank: null
+      pendingRank: null,
+      resultSignature: null
     }
   };
 
   function emptyPlay() {
-    return { balance: 0, hands: 0, perfectHands: 0, wins: 0, pushes: 0, losses: 0, history: [0], round: null };
+    return { balance: 0, hands: 0, perfectHands: 0, wins: 0, pushes: 0, losses: 0, history: [0], mistakes: [], round: null };
   }
 
   function emptyTrain() {
-    return { hands: 0, perfectHands: 0, errors: { preflop: 0, flop: 0, river: 0 }, round: null };
+    return { hands: 0, perfectHands: 0, errors: { preflop: 0, flop: 0, river: 0 }, mistakes: [], round: null };
   }
 
   function loadPlay() {
@@ -131,7 +131,8 @@
         wins: Number(saved.wins) || 0,
         pushes: Number(saved.pushes) || 0,
         losses: Number(saved.losses) || 0,
-        history: Array.isArray(saved.history) && saved.history.length ? saved.history.map(Number) : [0]
+        history: Array.isArray(saved.history) && saved.history.length ? saved.history.map(Number) : [0],
+        mistakes: Array.isArray(saved.mistakes) ? saved.mistakes.slice(-25) : []
       };
     } catch (error) {
       console.warn("Could not load Ultimate Hold'em play session.", error);
@@ -151,7 +152,8 @@
           preflop: Number(saved.errors && saved.errors.preflop) || 0,
           flop: Number(saved.errors && saved.errors.flop) || 0,
           river: Number(saved.errors && saved.errors.river) || 0
-        }
+        },
+        mistakes: Array.isArray(saved.mistakes) ? saved.mistakes.slice(-25) : []
       };
     } catch (error) {
       console.warn("Could not load Ultimate Hold'em training session.", error);
@@ -168,7 +170,8 @@
         wins: state.play.wins,
         pushes: state.play.pushes,
         losses: state.play.losses,
-        history: state.play.history.slice(-301)
+        history: state.play.history.slice(-301),
+        mistakes: state.play.mistakes.slice(-25)
       }));
     } catch (error) {
       console.warn("Could not save Ultimate Hold'em play session.", error);
@@ -180,7 +183,8 @@
       localStorage.setItem(TRAIN_STORAGE_KEY, JSON.stringify({
         hands: state.train.hands,
         perfectHands: state.train.perfectHands,
-        errors: state.train.errors
+        errors: state.train.errors,
+        mistakes: state.train.mistakes.slice(-25)
       }));
     } catch (error) {
       console.warn("Could not save Ultimate Hold'em training session.", error);
@@ -507,6 +511,64 @@
     return `First mistake: ${STREET_LABELS[mistake.stage]}. You chose ${ACTION_LABELS[mistake.chosen]}; optimal play was ${optimal}.`;
   }
 
+  function copyCard(card) {
+    return { rank: card.rank, suit: card.suit };
+  }
+
+  function mistakeSnapshot(round, number) {
+    const mistake = round.firstMistake;
+    const visibleBoard = mistake.stage === "preflop" ? 0 : mistake.stage === "flop" ? 3 : 5;
+    return {
+      number,
+      stage: mistake.stage,
+      chosen: mistake.chosen,
+      optimal: mistake.optimal,
+      acceptable: mistake.acceptable.slice(),
+      playerCards: round.playerCards.map(copyCard),
+      board: round.board.slice(0, visibleBoard).map(copyCard)
+    };
+  }
+
+  function miniCardMarkup(card) {
+    const suitClass = SUIT_CLASSES[card.suit];
+    return `<span class="mistake-mini-card ${suitClass}"><b>${E.RANK_LABELS[card.rank]}</b><i>${E.SUITS[card.suit]}</i></span>`;
+  }
+
+  function actionNames(actions) {
+    return actions.map(action => ACTION_LABELS[action]).join(" or ");
+  }
+
+  function renderMistakeList(mistakes, summaryNode, listNode) {
+    summaryNode.textContent = `Review mistakes (${mistakes.length})`;
+    if (!mistakes.length) {
+      listNode.innerHTML = `<p class="mistake-empty">No mistakes in this session.</p>`;
+      return;
+    }
+    listNode.innerHTML = mistakes.slice().reverse().map(mistake => {
+      const board = mistake.board.length
+        ? `<div class="mistake-card-group"><small>Board</small><div class="mistake-mini-hand">${mistake.board.map(miniCardMarkup).join("")}</div></div>`
+        : "";
+      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>Optimal play</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div></article>`;
+    }).join("");
+  }
+
+  function setDecisionIndicator(node, round) {
+    const completed = Boolean(round && round.completed);
+    node.classList.toggle("visible", completed);
+    node.classList.toggle("correct", completed && round.perfect);
+    node.classList.toggle("incorrect", completed && !round.perfect);
+    node.textContent = completed ? (round.perfect ? "+" : "−") : "";
+  }
+
+  function trainDecisionRecap(round) {
+    const rows = round.decisions.map(decision => {
+      const correct = decision.acceptable.includes(decision.chosen);
+      const chosen = correct ? "" : `<small>Your play: ${ACTION_LABELS[decision.chosen]}</small>`;
+      return `<div class="decision-recap-row ${correct ? "correct" : "incorrect"}"><span class="decision-recap-mark">${correct ? "+" : "−"}</span><div><strong>${STREET_LABELS[decision.stage]}</strong><span>Optimal: ${actionNames(decision.acceptable)}</span>${chosen}</div></div>`;
+    }).join("");
+    return `<div class="decision-recap"><div class="decision-recap-title">Correct play by street</div>${rows}</div>`;
+  }
+
   function newPlayRound() {
     const deck = E.shuffledDeck();
     return {
@@ -682,7 +744,6 @@
     const permitted = availableActions(round.stage).some(item => item.action === action);
     if (!permitted) return;
     gradeDecision(round, action);
-    renderPlayFeedback(round);
     if (action === "check") {
       if (round.stage === "preflop") await revealFlop(round);
       else if (round.stage === "flop") await revealTurnAndRiver(round);
@@ -702,6 +763,10 @@
     const net = Number(round && round.result && round.result.net);
     p.hands += 1;
     if (round.perfect) p.perfectHands += 1;
+    else if (round.firstMistake) {
+      p.mistakes.push(mistakeSnapshot(round, p.hands));
+      if (p.mistakes.length > 25) p.mistakes.shift();
+    }
     if (Number.isFinite(net) && net > 1e-9) p.wins += 1;
     else if (Number.isFinite(net) && net < -1e-9) p.losses += 1;
     else p.pushes += 1;
@@ -764,24 +829,12 @@
     availableActions(round.stage).forEach(item => el.playActions.append(actionButton(item, takePlayAction)));
   }
 
-  function renderPlayFeedback(round) {
-    const text = round && round.firstMistake ? `${mistakeText(round.firstMistake)} Later choices do not affect this hand’s accuracy.` : "";
-    el.playStrategyFeedback.textContent = text;
-    el.playStrategyFeedback.classList.toggle("hidden", !text);
-    el.playStrategyFeedback.classList.toggle("correct", Boolean(round && round.completed && round.perfect));
-    if (round && round.completed && round.perfect) {
-      el.playStrategyFeedback.textContent = "Perfect strategy hand — every decision matched exact optimal play.";
-      el.playStrategyFeedback.classList.remove("hidden");
-    }
-  }
-
   function renderPlayControls(round) {
     renderPlayActions(round);
     const message = playMessageForRound(round);
     el.playMessage.textContent = message.text;
     el.playMessage.classList.remove("win", "loss");
     if (message.tone !== "neutral") el.playMessage.classList.add(message.tone);
-    renderPlayFeedback(round);
     el.playDeal.disabled = Boolean(round && !round.completed);
     el.playDeal.textContent = round && round.completed ? "Deal Again" : "Deal";
   }
@@ -793,14 +846,13 @@
     el.playBalance.classList.toggle("negative", p.balance < 0);
     el.playAccuracy.textContent = formatPercent(p.perfectHands, p.hands);
     el.completedHands.textContent = String(p.hands);
-    el.playPerfectHands.textContent = String(p.perfectHands);
     el.playWins.textContent = String(p.wins);
     el.playPushes.textContent = String(p.pushes);
     el.playLosses.textContent = String(p.losses);
     const completedRound = p.round && p.round.completed ? p.round : null;
-    el.playDecisionIndicator.classList.toggle("correct", Boolean(completedRound && completedRound.perfect));
-    el.playDecisionIndicator.classList.toggle("incorrect", Boolean(completedRound && !completedRound.perfect));
+    setDecisionIndicator(el.playDecisionIndicator, completedRound);
     el.playDeltaSummary.textContent = p.hands ? `${p.perfectHands} of ${p.hands} hands played perfectly.` : "Accuracy is scored by perfectly played hands.";
+    renderMistakeList(p.mistakes, el.playMistakeSummary, el.playMistakeList);
     scheduleBalanceChartDraw();
   }
 
@@ -829,7 +881,8 @@
       perfect: true,
       scoringActive: true,
       firstMistake: null,
-      lastOptimal: null
+      lastOptimal: null,
+      decisions: []
     };
   }
 
@@ -844,7 +897,11 @@
     round.counted = true;
     state.train.hands += 1;
     if (round.perfect) state.train.perfectHands += 1;
-    else if (round.firstMistake) state.train.errors[round.firstMistake.stage] += 1;
+    else if (round.firstMistake) {
+      state.train.errors[round.firstMistake.stage] += 1;
+      state.train.mistakes.push(mistakeSnapshot(round, state.train.hands));
+      if (state.train.mistakes.length > 25) state.train.mistakes.shift();
+    }
     saveTrain();
   }
 
@@ -854,6 +911,7 @@
     if (!availableActions(round.stage).some(item => item.action === action)) return;
     const optimal = gradeDecision(round, action);
     round.lastOptimal = optimal;
+    round.decisions.push({ stage: round.stage, chosen: action, optimal: optimal.action, acceptable: optimal.acceptableActions.slice() });
     if (round.firstMistake) {
       round.completed = true;
       completeTrainHand(round);
@@ -897,27 +955,19 @@
     renderTrainActions(round);
     el.trainHands.textContent = String(t.hands);
     el.trainAccuracy.textContent = formatPercent(t.perfectHands, t.hands);
-    el.trainStreet.textContent = round && !round.completed ? STREET_LABELS[round.stage] : "—";
-    el.trainCompletedHands.textContent = String(t.hands);
-    el.trainPerfectHands.textContent = String(t.perfectHands);
-    el.trainPreflopErrors.textContent = String(t.errors.preflop);
-    el.trainFlopErrors.textContent = String(t.errors.flop);
-    el.trainRiverErrors.textContent = String(t.errors.river);
+    setDecisionIndicator(el.trainDecisionIndicator, round && round.completed ? round : null);
+    renderMistakeList(t.mistakes, el.trainMistakeSummary, el.trainMistakeList);
     el.trainDeal.disabled = Boolean(round && !round.completed);
     el.trainDeal.textContent = round && round.completed ? "Deal Next" : "Deal";
     el.trainFeedback.classList.remove("correct");
     if (!round) {
       el.trainMessage.textContent = "Press Deal to begin a decision hand.";
       el.trainFeedback.classList.add("hidden");
-    } else if (round.completed && round.perfect) {
-      el.trainMessage.textContent = "Perfect hand.";
-      el.trainFeedback.textContent = "Every decision matched exact optimal play.";
+    } else if (round.completed) {
+      el.trainMessage.textContent = round.perfect ? "Hand played perfectly." : "Hand complete.";
+      el.trainFeedback.innerHTML = trainDecisionRecap(round);
       el.trainFeedback.classList.remove("hidden");
-      el.trainFeedback.classList.add("correct");
-    } else if (round.completed && round.firstMistake) {
-      el.trainMessage.textContent = "Training hand ended at the first mistake.";
-      el.trainFeedback.textContent = mistakeText(round.firstMistake);
-      el.trainFeedback.classList.remove("hidden");
+      el.trainFeedback.classList.toggle("correct", round.perfect);
     } else {
       const prompts = {
         preflop: "Choose Check, Raise 3x, or Raise 4x.",
@@ -929,18 +979,51 @@
     }
   }
 
-  function lookupRequiredIndices() {
-    if (state.lookup.street === "preflop") return [0, 1];
-    if (state.lookup.street === "flop") return [0, 1, 2, 3, 4];
-    return [0, 1, 2, 3, 4, 5, 6];
+  function lookupCardSignature() {
+    return state.lookup.cards.map(card => card ? E.cardId(card) : "-").join(",");
   }
 
-  function lookupComplete() {
-    return lookupRequiredIndices().every(index => state.lookup.cards[index]);
+  function lookupBoardCount() {
+    return state.lookup.cards.slice(2).filter(Boolean).length;
+  }
+
+  function lookupCardsSequential() {
+    let emptySeen = false;
+    for (const card of state.lookup.cards.slice(2)) {
+      if (!card) emptySeen = true;
+      else if (emptySeen) return false;
+    }
+    return true;
+  }
+
+  function lookupStage() {
+    if (!state.lookup.cards[0] || !state.lookup.cards[1] || !lookupCardsSequential()) return null;
+    const count = lookupBoardCount();
+    if (count === 0) return "preflop";
+    if (count === 3) return "flop";
+    if (count === 5) return "river";
+    return null;
+  }
+
+  function lookupProgress() {
+    const playerCount = state.lookup.cards.slice(0, 2).filter(Boolean).length;
+    const boardCount = lookupBoardCount();
+    if (playerCount < 2) {
+      return { label: "Preflop", button: playerCount === 0 ? "Add Player Cards" : "Add One More Player Card", ready: false };
+    }
+    if (!lookupCardsSequential()) return { label: "Community Cards", button: "Fill Community Cards Left to Right", ready: false };
+    if (boardCount === 0) return { label: "Preflop", button: "Find Best Preflop Play", ready: true };
+    if (boardCount < 3) {
+      const needed = 3 - boardCount;
+      return { label: "Building Post-Flop", button: `Add ${needed} More Community ${needed === 1 ? "Card" : "Cards"}`, ready: false };
+    }
+    if (boardCount === 3) return { label: "Post-Flop", button: "Find Best Post-Flop Play", ready: true };
+    if (boardCount === 4) return { label: "Building River", button: "Add One More Community Card", ready: false };
+    return { label: "River", button: "Find Best River Play", ready: true };
   }
 
   function nextLookupEmpty() {
-    return lookupRequiredIndices().find(index => !state.lookup.cards[index]);
+    return state.lookup.cards.findIndex(card => !card);
   }
 
   function lookupSlotButton(index, label) {
@@ -962,10 +1045,14 @@
     el.lookupPlayerSlots.replaceChildren();
     el.lookupBoardSlots.replaceChildren();
     el.lookupPlayerSlots.append(lookupSlotButton(0, "Player card 1"), lookupSlotButton(1, "Player card 2"));
-    const count = state.lookup.street === "flop" ? 3 : state.lookup.street === "river" ? 5 : 0;
-    for (let index = 0; index < count; index += 1) el.lookupBoardSlots.append(lookupSlotButton(index + 2, `Community card ${index + 1}`));
-    el.lookupBoardGroup.classList.toggle("hidden", count === 0);
-    el.lookupBoardHelp.textContent = count === 3 ? "Choose the three flop cards" : "Choose all five board cards";
+    for (let index = 0; index < 5; index += 1) el.lookupBoardSlots.append(lookupSlotButton(index + 2, `Community card ${index + 1}`));
+    el.lookupBoardGroup.classList.remove("hidden");
+    const count = lookupBoardCount();
+    el.lookupBoardHelp.textContent = count < 3
+      ? "Add three cards for a post-flop decision or all five for a river decision"
+      : count < 5
+        ? "Add two more community cards to look up the river"
+        : "Five community cards entered";
   }
 
   function buildLookupPickers() {
@@ -1006,7 +1093,7 @@
     state.lookup.cards[state.lookup.activeSlot] = card;
     state.lookup.pendingRank = null;
     const next = nextLookupEmpty();
-    if (next !== undefined) state.lookup.activeSlot = next;
+    state.lookup.activeSlot = next >= 0 ? next : state.lookup.activeSlot;
     renderLookup();
   }
 
@@ -1014,6 +1101,7 @@
     state.lookup.cards = Array(7).fill(null);
     state.lookup.activeSlot = 0;
     state.lookup.pendingRank = null;
+    state.lookup.resultSignature = null;
     renderLookup();
   }
 
@@ -1021,14 +1109,7 @@
     if (state.lookup.activeSlot === null) return;
     state.lookup.cards[state.lookup.activeSlot] = null;
     state.lookup.pendingRank = null;
-    renderLookup();
-  }
-
-  function setLookupStreet(street) {
-    state.lookup.street = street;
-    state.lookup.cards = Array(7).fill(null);
-    state.lookup.activeSlot = 0;
-    state.lookup.pendingRank = null;
+    state.lookup.resultSignature = null;
     renderLookup();
   }
 
@@ -1036,148 +1117,141 @@
     return `<span class="lookup-action-badge action-${action}">${ACTION_LABELS[action]}</span>`;
   }
 
-  function renderExactLookup() {
-    el.lookupResult.classList.add("hidden");
-    el.strategySelectorRow.classList.add("hidden");
-    el.lookupStrategyResult.classList.add("hidden");
-    el.lookupMessage.classList.remove("error");
-    if (!lookupComplete()) {
-      el.lookupMessage.textContent = "Complete the visible cards to calculate the decision.";
-      return;
-    }
+  function setStrategyGuide(street) {
+    const value = street === "flop" ? "flop" : street === "river" ? "river" : "preflop";
+    el.strategyGuideSelect.value = value;
+    el.guidePreflop.classList.toggle("hidden", value !== "preflop");
+    el.guideFlop.classList.toggle("hidden", value !== "flop");
+    el.guideRiver.classList.toggle("hidden", value !== "river");
+  }
+
+  function renderBestLookup() {
+    const street = lookupStage();
+    if (!street) return;
     const playerCards = state.lookup.cards.slice(0, 2);
     const board = state.lookup.cards.slice(2).filter(Boolean);
-    const street = state.lookup.street;
     let html = "";
     let reachable = true;
 
     if (street === "preflop") {
       const result = preflopDecision(playerCards);
-      html = `<div class="lookup-verdict"><strong>Optimal Play</strong>${actionBadge(result.action)}<span>${result.classLabel}${result.provisional ? " · pending final audit confirmation" : " · exact certified result"}</span></div>`;
+      html = `<div class="lookup-verdict"><strong>Best Play</strong>${actionBadge(result.action)}<span>${result.classLabel}</span></div>`;
     } else if (street === "flop") {
       const pre = preflopDecision(playerCards);
       if (pre.action === "raise4") {
         reachable = false;
-        html = `<div class="lookup-verdict warning"><strong>Unreachable Under Optimal Play</strong><span>${pre.classLabel} should raise 4x preflop, so an optimal player never faces this flop decision.</span></div>`;
+        html = `<div class="lookup-verdict warning"><strong>Unreachable Under Optimal Play</strong><span>${pre.classLabel} should raise 4x preflop, so this post-flop decision is never reached.</span></div>`;
       } else {
         const result = exactFlopDecision(playerCards, board);
-        html = `<div class="lookup-verdict"><strong>Optimal Play</strong>${actionBadge(result.action)}<span>Exact rule-plus-exception lookup${result.exception ? " · this is an El Jefe strategy exception" : ""}</span></div>`;
+        html = `<div class="lookup-verdict"><strong>Best Play</strong>${actionBadge(result.action)}</div>`;
       }
     } else {
-      const exact = exactRiverDecision(playerCards, board);
+      const result = exactRiverDecision(playerCards, board);
       const pre = preflopDecision(playerCards);
-      let pathText = "This river is reachable through optimal prior checks.";
+      let pathText = "This river is reachable through the recommended prior checks.";
       if (pre.action === "raise4") {
         reachable = false;
-        pathText = `Off optimal path: ${pre.classLabel} should raise 4x preflop.`;
+        pathText = `Off the optimal path: ${pre.classLabel} should raise 4x preflop.`;
       } else {
         const flop = exactFlopDecision(playerCards, board.slice(0, 3));
         if (flop.action === "raise2") {
           reachable = false;
-          pathText = "Off optimal path: exact play raises 2x on the flop.";
+          pathText = "Off the optimal path: the best post-flop play is Raise 2x.";
         }
       }
-      const tieText = exact.indifferent ? "Call and Fold have identical EV." : `Calling is ${exact.margin >= 0 ? "better" : "worse"} by ${Math.abs(exact.margin).toFixed(4)} units.`;
-      html = `<div class="lookup-verdict${reachable ? "" : " warning"}"><strong>Optimal Play</strong>${actionBadge(exact.action)}<span>${pathText}</span></div><div class="lookup-ev-grid"><div><small>Call EV</small><strong>${exact.callEV.toFixed(4)}</strong></div><div><small>Fold EV</small><strong>-2.0000</strong></div><div><small>Dealer hands</small><strong>${exact.combinations}</strong></div></div><p class="lookup-explanation">${tieText} Dealer outcomes: ${exact.wins} wins for the player, ${exact.ties} ties, and ${exact.losses} losses.</p>`;
+      const tieText = result.indifferent ? "Call and Fold have identical value." : `Calling is ${result.margin >= 0 ? "better" : "worse"} by ${Math.abs(result.margin).toFixed(4)} units.`;
+      html = `<div class="lookup-verdict${reachable ? "" : " warning"}"><strong>Best Play</strong>${actionBadge(result.action)}<span>${pathText}</span></div><div class="lookup-ev-grid"><div><small>Call EV</small><strong>${result.callEV.toFixed(4)}</strong></div><div><small>Fold EV</small><strong>-2.0000</strong></div><div><small>Dealer hands</small><strong>${result.combinations}</strong></div></div><p class="lookup-explanation">${tieText} Dealer outcomes: ${result.wins} player wins, ${result.ties} ties, and ${result.losses} losses.</p>`;
     }
 
+    state.lookup.resultSignature = lookupCardSignature();
     el.lookupResult.innerHTML = html;
     el.lookupResult.classList.remove("hidden");
-    el.lookupMessage.textContent = reachable ? "Decision calculated." : street === "river" ? "Exact river action calculated despite the earlier off-path decision." : "Earlier optimal play prevents this decision.";
-    if (street !== "preflop" && (street === "river" || reachable)) {
-      el.strategySelectorRow.classList.remove("hidden");
-      renderSimplifiedLookup();
-    }
+    el.lookupMessage.classList.remove("error");
+    el.lookupMessage.textContent = reachable ? "Best play found." : street === "river" ? "River play found; the position is off the optimal path." : "An earlier best play prevents this decision.";
+    if (street !== "preflop" && (street === "river" || reachable)) renderSimplifiedLookup(street);
+    else el.lookupStrategyResults.classList.add("hidden");
+    setStrategyGuide(street);
   }
 
-  function renderSimplifiedLookup() {
-    if (!lookupComplete() || state.lookup.street === "preflop") {
-      el.lookupStrategyResult.classList.add("hidden");
+  function renderSimplifiedLookup(street = lookupStage()) {
+    if (!street || street === "preflop") {
+      el.lookupStrategyResults.classList.add("hidden");
       return;
     }
     const playerCards = state.lookup.cards.slice(0, 2);
     const board = state.lookup.cards.slice(2).filter(Boolean);
-    const strategy = el.lookupStrategy.value;
-    let title;
-    let result;
-    let note = "";
+    const optimal = street === "flop" ? exactFlopDecision(playerCards, board).action : exactRiverDecision(playerCards, board).action;
+    const cards = [];
 
-    if (state.lookup.street === "flop") {
-      if (strategy === "jefe") {
-        title = "El Jefe Strategy — Intermediate";
-        result = elJefeFlopDecision(playerCards, board);
-        note = `This strategy reduced the Wizard flop strategy’s exact EV loss by ${D.flopPenaltyReductionPercent.toFixed(2)}%.`;
-      } else {
-        title = "Wizard of Odds Strategy — Beginner";
-        result = wizardFlopDecision(playerCards, board);
-        note = "This is the simpler published basic strategy.";
-      }
-    } else if (strategy === "jefe") {
-      title = "El Jefe Strategy — Intermediate";
-      el.lookupStrategyResult.innerHTML = `<div class="strategy-result-heading"><strong>${title}</strong><span class="development-pill">River in development</span></div><p>The intermediate river rule is still being analyzed. Exact optimal play remains available above, and the Wizard beginner rule can be selected now.</p>`;
-      el.lookupStrategyResult.classList.remove("hidden");
-      return;
+    if (street === "flop") {
+      const jefe = elJefeFlopDecision(playerCards, board);
+      const wizard = wizardFlopDecision(playerCards, board);
+      cards.push(strategyLookupCard("El Jefe Strategy — Intermediate", jefe, optimal, `Cuts the Wizard strategy’s post-flop decision cost by ${D.flopPenaltyReductionPercent.toFixed(2)}% in our analysis.`));
+      cards.push(strategyLookupCard("Wizard of Odds Strategy — Beginner", wizard, optimal, "The simpler published basic strategy."));
     } else {
-      title = "Wizard of Odds Strategy — Beginner";
-      result = wizardRiverDecision(playerCards, board);
-      note = `One-card dealer outs that beat you: ${result.outs.beats} of ${result.outs.total}.`;
+      cards.push(`<article class="lookup-strategy-card"><div class="strategy-result-heading"><strong>El Jefe Strategy — Intermediate</strong><span class="development-pill">Under construction</span></div><p>The intermediate river strategy is still being developed. The best play is shown above.</p></article>`);
+      const wizard = wizardRiverDecision(playerCards, board);
+      cards.push(strategyLookupCard("Wizard of Odds Strategy — Beginner", wizard, optimal, `One-card dealer outs that beat you: ${wizard.outs.beats} of ${wizard.outs.total}.`));
     }
+    el.lookupStrategyResults.innerHTML = cards.join("");
+    el.lookupStrategyResults.classList.remove("hidden");
+  }
 
-    const exact = state.lookup.street === "flop" ? exactFlopDecision(playerCards, board).action : exactRiverDecision(playerCards, board).action;
-    const agreement = result.action === exact ? "Agrees with optimal play." : "Differs from optimal play in this situation.";
-    el.lookupStrategyResult.innerHTML = `<div class="strategy-result-heading"><strong>${title}</strong>${actionBadge(result.action)}</div><p>${result.rule}</p><p class="strategy-agreement ${result.action === exact ? "agrees" : "differs"}">${agreement}</p><small>${note}</small>`;
-    el.lookupStrategyResult.classList.remove("hidden");
+  function strategyLookupCard(title, result, optimal, note) {
+    const agrees = result.action === optimal;
+    return `<article class="lookup-strategy-card"><div class="strategy-result-heading"><strong>${title}</strong>${actionBadge(result.action)}</div><p>${result.rule}</p><p class="strategy-agreement ${agrees ? "agrees" : "differs"}">${agrees ? "Matches the best play." : "Differs from the best play in this situation."}</p><small>${note}</small></article>`;
   }
 
   function renderLookup() {
-    el.lookupStreetTabs.forEach(button => {
-      const active = button.dataset.street === state.lookup.street;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-selected", String(active));
-    });
     renderLookupSlots();
     buildLookupPickers();
-    const required = lookupRequiredIndices();
-    if (!required.includes(state.lookup.activeSlot)) state.lookup.activeSlot = required[0];
+    if (state.lookup.activeSlot === null || state.lookup.activeSlot < 0 || state.lookup.activeSlot > 6) state.lookup.activeSlot = 0;
     const slotLabel = state.lookup.activeSlot < 2 ? `player card ${state.lookup.activeSlot + 1}` : `community card ${state.lookup.activeSlot - 1}`;
     el.lookupPickerLabel.textContent = state.lookup.pendingRank === null ? `Choose a rank for ${slotLabel}` : `Choose a suit for ${E.RANK_LABELS[state.lookup.pendingRank]}`;
     el.lookupRemove.disabled = !state.lookup.cards[state.lookup.activeSlot];
-    renderExactLookup();
+    const progress = lookupProgress();
+    el.lookupStageLabel.textContent = progress.label;
+    el.lookupSearch.textContent = progress.button;
+    el.lookupSearch.disabled = !progress.ready;
+    const signature = lookupCardSignature();
+    if (state.lookup.resultSignature !== signature) {
+      el.lookupResult.classList.add("hidden");
+      el.lookupStrategyResults.classList.add("hidden");
+      if (!el.lookupMessage.classList.contains("error")) el.lookupMessage.textContent = progress.ready ? "Cards are ready." : "";
+    }
   }
 
   function buildPreflopChart() {
     const table = document.createElement("table");
-    table.className = "preflop-strategy-table";
+    table.className = "preflop-strategy-table triangular-chart";
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
-    headRow.innerHTML = `<th class="corner-cell">Cards</th>${CHART_RANKS.map(rank => `<th>${rank}</th>`).join("")}`;
+    headRow.innerHTML = `<th class="corner-cell"><span>Low ↓</span><span>High →</span></th>${CHART_RANKS.map(rank => `<th>${rank}</th>`).join("")}`;
     thead.append(headRow);
     const tbody = document.createElement("tbody");
-    for (const rowRank of CHART_RANKS) {
+    const rowRanks = [...CHART_RANKS].reverse();
+    const rankValue = rank => CHART_RANKS.length - CHART_RANKS.indexOf(rank) + 1;
+    for (const rowRank of rowRanks) {
       const row = document.createElement("tr");
       const rowHeader = document.createElement("th");
       rowHeader.textContent = rowRank;
       row.append(rowHeader);
       for (const colRank of CHART_RANKS) {
         const cell = document.createElement("td");
-        const rowValue = CHART_RANKS.length - CHART_RANKS.indexOf(rowRank);
-        const colValue = CHART_RANKS.length - CHART_RANKS.indexOf(colRank);
-        const high = rowValue >= colValue ? rowRank : colRank;
-        const low = rowValue >= colValue ? colRank : rowRank;
-        const key = high === low ? high + low : high + low;
+        if (rankValue(colRank) < rankValue(rowRank)) {
+          cell.className = "preflop-chart-empty";
+          row.append(cell);
+          continue;
+        }
+        const key = `${colRank}${rowRank}`;
         const category = D.preflopChart[key];
         const code = category === "always" ? "4X" : category === "suited" ? "4X S" : "C";
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = `preflop-chart-cell cell-${category}`;
-        button.textContent = code;
+        const marker = document.createElement("span");
+        marker.className = `preflop-chart-cell cell-${category}`;
+        marker.textContent = code;
         const detail = category === "always" ? "Raise 4x suited or offsuit" : category === "suited" ? "Raise 4x only when suited; check offsuit" : "Check suited or offsuit";
-        button.title = `${high}${low}: ${detail}`;
-        button.addEventListener("click", () => {
-          el.lookupMessage.textContent = `${high}${low}: ${detail}.`;
-          el.lookupMessage.classList.remove("error");
-        });
-        cell.append(button);
+        marker.title = `${colRank}${rowRank}: ${detail}`;
+        cell.append(marker);
         row.append(cell);
       }
       tbody.append(row);
@@ -1305,10 +1379,10 @@
   el.resetPlay.addEventListener("click", resetPlay);
   el.trainDeal.addEventListener("click", startTrainHand);
   el.resetTrain.addEventListener("click", resetTrain);
-  el.lookupStreetTabs.forEach(button => button.addEventListener("click", () => setLookupStreet(button.dataset.street)));
   el.lookupRemove.addEventListener("click", removeLookupCard);
   el.lookupClear.addEventListener("click", clearLookup);
-  el.lookupStrategy.addEventListener("change", renderSimplifiedLookup);
+  el.lookupSearch.addEventListener("click", renderBestLookup);
+  el.strategyGuideSelect.addEventListener("change", () => setStrategyGuide(el.strategyGuideSelect.value));
 
   window.addEventListener("keydown", event => {
     if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
@@ -1363,7 +1437,7 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForUpdate) window.location.reload();
     });
-    navigator.serviceWorker.register("./service-worker.js?v=7").then(registration => {
+    navigator.serviceWorker.register("./service-worker.js?v=10").then(registration => {
       const showWaiting = worker => {
         if (!worker || worker.state !== "installed" || !navigator.serviceWorker.controller) return;
         el.updateNotice.classList.remove("hidden");

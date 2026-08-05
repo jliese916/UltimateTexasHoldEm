@@ -7,11 +7,11 @@
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="Ultimate Hold'em Parlor" name="apple-mobile-web-app-title"/>
 <title>Casa del Jefe — The Ultimate Hold’em Parlor</title>
-<meta content="Play Ultimate Texas Hold’em, train exact decisions, and look up optimal preflop, flop, and river play." name="description"/>
+<meta content="Play Ultimate Texas Hold’em, train optimal decisions, and look up the best play for any decision." name="description"/>
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./favicon-64.png" rel="icon" type="image/png"/>
 <link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="./styles.css?v=7" rel="stylesheet"/>
+<link href="./styles.css?v=10" rel="stylesheet"/>
 </head>
 <body>
 <main class="app">
@@ -54,7 +54,7 @@
 <div class="lir-wordmark"><span>CASA DEL JEFE</span><small>ULTIMATE TEXAS HOLD’EM</small></div>
 <div aria-label="Play statistics" class="play-topline lir-topline">
 <div><small>Balance</small><strong id="playBalance">0 units</strong></div>
-<div class="play-accuracy-stat"><small>Perfect Hands</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="playDecisionIndicator"></span></span></div>
+<div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="playDecisionIndicator"></span></span></div>
 <div><small>Bet</small><strong>2 units</strong></div>
 </div>
 <div class="lir-zone dealer-zone red-card-zone"><div class="zone-label light">Dealer</div><div class="hand two-card-hand" id="playDealer"></div></div>
@@ -67,7 +67,6 @@
 <div class="uth-wager-cell uth-play-cell"><div class="uth-wager-spot" id="playSpot"><span>Play</span><div class="uth-chip-stack" id="playChips"></div></div></div>
 </div>
 <div aria-live="polite" class="play-message lir-message uth-message" id="playMessage">Press Deal to begin.</div>
-<div aria-live="polite" class="strategy-feedback hidden" id="playStrategyFeedback"></div>
 <div aria-label="Available actions" class="uth-action-row" id="playActions"></div>
 <button class="deal-button table-hand-button uth-deal-button" id="playDeal" type="button">Deal</button>
 </div>
@@ -79,26 +78,23 @@
 </section>
 <section aria-label="Session review and controls" class="session-hub">
 <div class="session-heading"><strong>SESSION REVIEW</strong><button class="danger-link session-reset-button" id="resetPlay" type="button">Reset session</button></div>
-<div class="session-stats five-stats">
+<div class="session-stats">
 <div><small>Hands</small><strong id="completedHands">0</strong></div>
-<div><small>Perfect</small><strong id="playPerfectHands">0</strong></div>
 <div><small>Wins</small><strong id="playWins">0</strong></div>
 <div><small>Pushes</small><strong id="playPushes">0</strong></div>
 <div><small>Losses</small><strong id="playLosses">0</strong></div>
 </div>
-<p class="strategy-pending-note">Accuracy counts the percentage of complete hands played perfectly. Only the first strategic mistake in a hand is recorded.</p>
+<details class="mistake-review"><summary id="playMistakeSummary">Review mistakes (0)</summary><div class="mistake-list" id="playMistakeList"></div></details>
 </section>
 </section>
 
 <section class="panel hidden train-panel" id="trainPanel">
 <div class="lir-table uth-table train-table">
-<div class="lir-wordmark"><span>DECISION TRAINER</span><small>NO DEALER HAND · EXACT OPTIMAL SCORING</small></div>
+<div class="lir-wordmark train-wordmark"><span>Train</span></div>
 <div aria-label="Train statistics" class="play-topline lir-topline train-topline">
 <div><small>Hands</small><strong id="trainHands">0</strong></div>
-<div><small>Perfect</small><strong id="trainAccuracy">NA</strong></div>
-<div><small>Street</small><strong id="trainStreet">—</strong></div>
+<div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="trainAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="trainDecisionIndicator"></span></span></div>
 </div>
-<div class="train-no-dealer"><span aria-hidden="true">♠ ♥ ♦ ♣</span><strong>Dealer cards are intentionally omitted.</strong><small>Optimal decisions depend on all possible dealer hands, not one sampled hand.</small></div>
 <div class="lir-zone community-zone uth-community-zone yellow-card-zone"><div class="zone-label light">Community</div><div class="hand five-card-hand" id="trainCommunity"></div></div>
 <div class="lir-zone player-zone uth-player-zone"><div class="zone-label light">Player</div><div class="hand two-card-hand" id="trainPlayer"></div></div>
 <div aria-live="polite" class="play-message lir-message uth-message" id="trainMessage">Press Deal to begin a decision hand.</div>
@@ -108,35 +104,24 @@
 </div>
 <section aria-label="Training review and controls" class="session-hub">
 <div class="session-heading"><strong>TRAINING REVIEW</strong><button class="danger-link session-reset-button" id="resetTrain" type="button">Reset training</button></div>
-<div class="session-stats">
-<div><small>Hands</small><strong id="trainCompletedHands">0</strong></div>
-<div><small>Perfect</small><strong id="trainPerfectHands">0</strong></div>
-<div><small>Preflop Errors</small><strong id="trainPreflopErrors">0</strong></div>
-<div><small>Flop Errors</small><strong id="trainFlopErrors">0</strong></div>
-<div><small>River Errors</small><strong id="trainRiverErrors">0</strong></div>
-</div>
-<p class="strategy-pending-note">A wrong decision ends the training hand at the first mistake. Later off-path decisions are never scored.</p>
+<details class="mistake-review"><summary id="trainMistakeSummary">Review mistakes (0)</summary><div class="mistake-list" id="trainMistakeList"></div></details>
 </section>
 </section>
 
 <section class="panel hidden lookup-panel" id="lookupPanel">
 <section class="lookup-intro">
-<div class="construction-kicker">Exact Strategy Desk</div>
+<div class="construction-kicker">Strategy Desk</div>
 <h2>Look Up a Decision</h2>
-<p>Enter the player cards and the community cards available at the decision. Optimal play is always shown first.</p>
+<p>Enter your two cards, then add community cards when needed. The lookup will recognize whether you are asking about preflop, post-flop, or river play.</p>
 </section>
-<div class="lookup-street-tabs" id="lookupStreetTabs" aria-label="Decision street">
-<button class="lookup-street active" data-street="preflop" type="button">Preflop</button>
-<button class="lookup-street" data-street="flop" type="button">Flop</button>
-<button class="lookup-street" data-street="river" type="button">River</button>
-</div>
+<div class="lookup-stage-status" aria-live="polite"><small>Current decision</small><strong id="lookupStageLabel">Preflop</strong></div>
 <div class="lookup-hands">
 <section class="lookup-group">
 <div class="lookup-heading"><strong>Player</strong><small>Choose two hole cards</small></div>
 <div class="lookup-slots" id="lookupPlayerSlots"></div>
 </section>
 <section class="lookup-group" id="lookupBoardGroup">
-<div class="lookup-heading"><strong>Community</strong><small id="lookupBoardHelp">Choose the available board cards</small></div>
+<div class="lookup-heading"><strong>Community</strong><small id="lookupBoardHelp">Add three cards for a post-flop decision or all five for a river decision</small></div>
 <div class="lookup-slots" id="lookupBoardSlots"></div>
 </section>
 </div>
@@ -147,26 +132,57 @@
 <button class="secondary-button" id="lookupRemove" type="button">Remove selected card</button>
 <button class="secondary-button" id="lookupClear" type="button">Clear cards</button>
 </div>
+<button class="lookup-search-button" id="lookupSearch" type="button" disabled>Find Best Preflop Play</button>
 <p aria-live="polite" class="lookup-message" id="lookupMessage"></p>
 <div aria-live="polite" class="lookup-result hidden" id="lookupResult"></div>
-<div class="strategy-selector-row hidden" id="strategySelectorRow">
-<label for="lookupStrategy">Simplified strategy</label>
-<select id="lookupStrategy">
-<option value="jefe">El Jefe Strategy — Intermediate</option>
-<option value="wizard">Wizard of Odds Strategy — Beginner</option>
+<div class="lookup-strategy-results hidden" id="lookupStrategyResults"></div>
+<section class="strategy-guide-stack" aria-label="Strategy guides">
+<div class="strategy-guide-selector">
+<label for="strategyGuideSelect">Strategy guide</label>
+<select id="strategyGuideSelect">
+<option value="preflop">Preflop</option>
+<option value="flop">Post-Flop</option>
+<option value="river">River</option>
 </select>
 </div>
-<div class="lookup-strategy-result hidden" id="lookupStrategyResult"></div>
-<details class="strategy-chart-details" open>
-<summary>Exact Preflop Strategy Chart</summary>
+<div class="strategy-guide-panel" id="guidePreflop">
+<h3>Preflop Strategy</h3>
+<p class="strategy-guide-intro">Use the chart to raise 4x always, raise only when suited, or check.</p>
 <div class="preflop-chart-legend">
 <span><i class="preflop-key key-always">4X</i> Raise suited or offsuit</span>
 <span><i class="preflop-key key-suited">4X S</i> Raise only when suited</span>
 <span><i class="preflop-key key-check">C</i> Check</span>
 </div>
 <div class="strategy-table-container" id="preflopChartContainer"></div>
-<p class="chart-note">The chart is exact preflop strategy. El Jefe and Wizard simplified strategies apply only after the flop.</p>
-</details>
+<p class="chart-note">Columns run from Ace down to deuce; rows run from deuce up to Ace. Each starting-hand combination appears once, with pairs on the diagonal.</p>
+</div>
+<div class="strategy-guide-panel hidden" id="guideFlop">
+<div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><ol>
+<li>Raise 2x with a straight or better.</li>
+<li>Raise with a hidden pair made with a non-pocket starting hand.</li>
+<li>With 22, raise when the flop contains a deuce or the flop itself is three of a kind; otherwise check.</li>
+<li>Raise with four to a flush containing a hidden ten or higher, except a bare ten-high flush draw with an offsuit Tx hand, no pair, and no one-card straight draw.</li>
+<li>With T9 or J9, raise an eight-out straight draw unless both hole cards are higher than every flop card.</li>
+<li>With 96s, 97s, or 98s, raise any four-flush.</li>
+<li>With K2o, K3o, or K4o, raise K-high on an ace-containing paired flop or a three-of-a-kind flop.</li>
+<li>Otherwise check.</li>
+</ol></div>
+<div class="strategy-guide-card strategy-wizard"><h3>Wizard of Odds Strategy <span>Beginner</span></h3><ol>
+<li>Raise 2x with two pair or better.</li>
+<li>Raise with a hidden pair, except pocket deuces.</li>
+<li>Raise with four to a flush containing a hidden ten or higher.</li>
+<li>Otherwise check.</li>
+</ol></div>
+</div>
+<div class="strategy-guide-panel hidden" id="guideRiver">
+<div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><p class="under-construction">Under construction. The best river play is still available through Look Up.</p></div>
+<div class="strategy-guide-card strategy-wizard"><h3>Wizard of Odds Strategy <span>Beginner</span></h3><ol>
+<li>Call 1x with a hidden pair or better.</li>
+<li>Otherwise call when fewer than 21 one-card dealer outs beat you.</li>
+<li>Otherwise fold.</li>
+</ol></div>
+</div>
+</section>
 </section>
 
 <footer>
@@ -176,8 +192,8 @@
 </div>
 </footer>
 </main>
-<script src="./poker-engine.js?v=7"></script>
-<script src="./strategy-data.js?v=7"></script>
-<script defer src="./app.js?v=7"></script>
+<script src="./poker-engine.js?v=10"></script>
+<script src="./strategy-data.js?v=10"></script>
+<script defer src="./app.js?v=10"></script>
 </body>
 </html>

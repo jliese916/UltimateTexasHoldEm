@@ -2439,3 +2439,175 @@ footer{color:var(--casa-muted)}
   .preflop-strategy-table th,.preflop-chart-cell{min-width:32px;height:31px}
   .preflop-chart-cell{font-size:.56rem}
 }
+
+
+/* Ultimate Hold'em Parlor v8: streamlined review, training recap, and strategy guides */
+.train-topline{grid-template-columns:repeat(2,minmax(0,1fr));width:min(360px,92%)}
+.uth-action-row{margin-top:12px}
+
+/* Match the other Casa del Jefe trainers: green plus for a perfect hand, red minus for a mistake. */
+.play-decision-indicator{
+  position:relative!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  width:1.22rem!important;
+  height:1.22rem!important;
+  border-radius:999px!important;
+  color:#fff!important;
+  font-size:1.08rem!important;
+  font-weight:1000!important;
+  line-height:1!important;
+  opacity:0;
+  transform:scale(.85);
+}
+.play-decision-indicator::before,.play-decision-indicator::after{display:none!important}
+.play-decision-indicator.visible{opacity:.72;transform:scale(1)}
+.play-decision-indicator.correct{background:#16a34a!important}
+.play-decision-indicator.incorrect{background:#dc2626!important}
+
+.mistake-review{margin-top:12px;border-top:1px solid rgba(201,162,58,.24);text-align:left}
+.mistake-review>summary{padding:11px 2px 3px;color:var(--casa-gold-soft);font-size:.78rem;font-weight:900;cursor:pointer;list-style-position:inside}
+.mistake-list{display:grid;gap:10px;padding-top:8px}
+.mistake-empty{margin:0!important;padding:9px 2px;color:var(--casa-muted)!important;font-size:.76rem;text-align:center}
+.mistake-card{display:grid;gap:9px;padding:11px;border:1px solid rgba(216,181,100,.24);border-radius:13px;background:rgba(0,0,0,.18)}
+.mistake-card h3{margin:0;color:var(--casa-gold-soft);font-size:.78rem;letter-spacing:.02em}
+.mistake-visual{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 16px}
+.mistake-card-group{display:grid;gap:4px}
+.mistake-card-group>small,.mistake-decision-grid small{color:var(--casa-muted);font-size:.6rem;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.mistake-mini-hand{display:flex;gap:4px}
+.mistake-mini-card{display:grid;place-items:center;width:31px;height:43px;border:1px solid #d8ccb0;border-radius:6px;background:#fffdf8;color:#17231d;box-shadow:0 2px 5px rgba(0,0,0,.24);line-height:1}
+.mistake-mini-card b{font-size:.73rem}.mistake-mini-card i{font-size:.75rem;font-style:normal}
+.mistake-mini-card.suit-hearts,.mistake-mini-card.suit-diamonds{color:#b51f31}
+.mistake-decision-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mistake-decision-grid>div{display:grid;gap:3px;padding:8px;border-radius:9px;background:rgba(255,255,255,.045)}
+.mistake-decision-grid strong{font-size:.78rem}.mistake-chosen{color:#ff9d9d!important}.mistake-optimal{color:#8ce7ae!important}
+
+.strategy-feedback{width:min(610px,94%);margin:7px auto 0;padding:10px 12px;border-color:rgba(216,181,100,.30);background:rgba(0,0,0,.18);color:var(--casa-cream)}
+.decision-recap{display:grid;gap:7px;text-align:left}
+.decision-recap-title{color:var(--casa-gold-soft);font-size:.76rem;font-weight:950;text-align:center;text-transform:uppercase;letter-spacing:.07em}
+.decision-recap-row{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.045)}
+.decision-recap-row>div{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:baseline}
+.decision-recap-row strong{color:var(--casa-cream);font-size:.75rem}.decision-recap-row span{color:var(--casa-muted);font-size:.73rem}.decision-recap-row small{grid-column:1/-1;color:#ffb3b3;font-size:.68rem}
+.decision-recap-mark{display:grid!important;place-items:center;width:21px;height:21px;border-radius:999px;color:#fff!important;font-size:.95rem!important;font-weight:1000;background:#16a34a}
+.decision-recap-row.incorrect .decision-recap-mark{background:#dc2626}
+
+.lookup-strategy-results{display:grid;gap:10px;margin-top:14px;text-align:left}
+.lookup-strategy-card{padding:13px 12px;border:1px solid rgba(216,181,100,.28);border-radius:15px;background:rgba(0,0,0,.22)}
+.lookup-strategy-card p{margin:9px 0!important;color:var(--casa-cream)!important;font-size:.8rem;line-height:1.45}
+.lookup-strategy-card small{color:var(--casa-muted);font-size:.7rem}
+.strategy-guide-stack{display:grid;gap:10px;margin-top:18px;text-align:left}
+.strategy-guide-details{padding:11px;border:1px solid rgba(216,181,100,.30);border-radius:15px;background:rgba(0,0,0,.18)}
+.strategy-guide-details>summary{color:var(--casa-gold-soft);font-weight:950;cursor:pointer;text-align:center}
+.strategy-guide-intro{margin:10px auto 0!important;color:var(--casa-muted)!important;font-size:.78rem;text-align:center}
+.strategy-guide-card{margin-top:11px;padding:12px;border:1px solid rgba(216,181,100,.22);border-radius:12px;background:rgba(255,255,255,.035)}
+.strategy-guide-card h3{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin:0;color:var(--casa-cream);font-size:.9rem}
+.strategy-guide-card h3 span{color:var(--casa-gold-soft);font-size:.66rem;letter-spacing:.05em;text-transform:uppercase}
+.strategy-guide-card ol{margin:9px 0 0;padding-left:1.25rem;color:var(--casa-muted);font-size:.77rem;line-height:1.5}
+.strategy-guide-card li+li{margin-top:4px}.under-construction{margin:9px 0 0!important;color:var(--casa-muted)!important;font-size:.78rem;line-height:1.45}
+
+/* Exact triangular preflop chart: one entry per rank combination, no clickable cells. */
+.preflop-strategy-table .corner-cell{display:grid;gap:1px;place-items:center;min-width:54px;line-height:1.05}
+.preflop-strategy-table .corner-cell span{display:block;font-size:.56rem;white-space:nowrap}
+.preflop-chart-empty{background:transparent!important}
+.preflop-chart-cell{
+  display:grid;
+  place-items:center;
+  width:100%;
+  min-width:42px;
+  height:38px;
+  border:0;
+  border-radius:6px;
+  font-size:.80rem;
+  font-weight:1000;
+  letter-spacing:-.025em;
+  line-height:1;
+  cursor:default;
+  user-select:none;
+}
+.preflop-strategy-table th{min-width:42px;height:38px;font-size:.77rem}
+
+@media(max-width:560px){
+  .uth-action-row{margin-top:10px}
+  .mistake-decision-grid{grid-template-columns:1fr 1fr}
+  .strategy-guide-card h3{display:grid;justify-content:start}
+}
+@media(max-width:390px){
+  .preflop-strategy-table th,.preflop-chart-cell{min-width:35px;height:34px}
+  .preflop-chart-cell{font-size:.68rem}
+  .preflop-strategy-table .corner-cell{min-width:48px}
+  .mistake-mini-card{width:28px;height:39px}
+}
+
+/* v8 final overrides */
+.play-accuracy-stat .play-decision-indicator{display:inline-grid!important}
+.strategy-guide-stack,.strategy-guide-details,.strategy-table-container{min-width:0}
+.strategy-guide-details{max-width:100%}
+.strategy-table-container{width:100%;overflow-x:auto;overflow-y:hidden}
+@media(max-width:560px){.lookup-panel{overflow:hidden}.strategy-guide-stack{width:100%}}
+
+
+/* Ultimate Hold'em Parlor v9: progressive lookup and visual refinements */
+.lookup-stage-status{
+  display:grid;
+  gap:2px;
+  width:min(250px,100%);
+  margin:0 auto 14px;
+  padding:9px 12px;
+  border:1px solid rgba(216,181,100,.30);
+  border-radius:12px;
+  background:rgba(0,0,0,.18);
+}
+.lookup-stage-status small{color:var(--casa-muted);font-size:.62rem;font-weight:850;letter-spacing:.10em;text-transform:uppercase}
+.lookup-stage-status strong{color:var(--casa-gold-soft);font-family:Georgia,"Times New Roman",serif;font-size:1rem}
+.lookup-search-button{
+  display:block;
+  width:min(360px,100%);
+  min-height:46px;
+  margin:14px auto 0;
+  padding:9px 16px;
+  border:1px solid var(--casa-gold);
+  border-radius:12px;
+  background:linear-gradient(145deg,var(--casa-gold-soft),var(--casa-gold));
+  color:#132019;
+  font-weight:950;
+  cursor:pointer;
+  box-shadow:0 5px 14px rgba(0,0,0,.23);
+}
+.lookup-search-button:disabled{border-color:rgba(216,181,100,.25);background:rgba(255,255,255,.06);color:var(--casa-muted);box-shadow:none;cursor:not-allowed;opacity:.72}
+
+/* Match the card proportions and typography used by the other Casa del Jefe lookup tools. */
+.lookup-slot{width:51px;height:74px}
+.lookup-slot>.card{border-radius:9px}
+.lookup-slot .card-rank{font-size:2.05rem!important;font-weight:900!important;line-height:1!important;letter-spacing:-.06em!important}
+.lookup-slot .card-suit{font-size:.78rem!important;font-weight:900!important;line-height:1!important}
+.lookup-slot .card-suit-top{top:6px!important;right:6px!important}
+.lookup-slot .card-suit-bottom{bottom:6px!important;left:6px!important}
+
+.strategy-guide-selector{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;margin-bottom:10px;text-align:left}
+.strategy-guide-selector label{color:var(--casa-gold-soft);font-size:.78rem;font-weight:900}
+.strategy-guide-selector select{width:100%;min-height:42px;padding:7px 10px;border:1px solid rgba(216,181,100,.42);border-radius:10px;background:#102a21;color:var(--casa-cream);font-weight:850}
+.strategy-guide-panel{padding:11px;border:1px solid rgba(216,181,100,.30);border-radius:15px;background:rgba(0,0,0,.18)}
+.strategy-guide-panel>h3{margin:0;color:var(--casa-gold-soft);font-size:.95rem;text-align:center}
+
+/* Triangular chart is display-only, with the action code filling more of each cell. */
+.preflop-chart-cell{font-size:.92rem!important;pointer-events:none!important;cursor:default!important}
+.preflop-strategy-table th{font-size:.79rem!important}
+
+@media(max-width:560px){
+  .strategy-guide-selector{grid-template-columns:1fr}
+  .lookup-slot{width:47px;height:69px}
+  .lookup-slot .card-rank{font-size:1.85rem!important}
+  .lookup-slot .card-suit{font-size:.72rem!important}
+  .preflop-chart-cell{font-size:.80rem!important}
+}
+@media(max-width:390px){
+  .lookup-slot{width:44px;height:65px}
+  .lookup-slot .card-rank{font-size:1.68rem!important}
+  .lookup-slot .card-suit{font-size:.66rem!important}
+  .preflop-chart-cell{font-size:.74rem!important}
+}
+
+
+/* v10: simplified Train room title */
+.train-wordmark{margin-bottom:7px!important}
+.train-wordmark span{font-size:1.05rem;letter-spacing:.12em;text-transform:none}

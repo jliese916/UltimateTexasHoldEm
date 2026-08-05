@@ -1,24 +1,29 @@
-# Casa del Jefe — The Ultimate Hold’em Parlor v7 Strategy Preview
+# Casa del Jefe — The Ultimate Hold’em Parlor v10
 
-A self-contained static Ultimate Texas Hold’em app with full Play, Train, and Look Up modes.
+A self-contained static Ultimate Texas Hold’em app with Play, Train, and Look Up modes.
 
-## Included
+## Version 10 changes
 
-- Full core-game Play mode with dealer cards, wagers, qualification, payouts, bankroll, and history.
-- Exact optimal scoring in Play and Train.
+- Play session review contains Hands, Wins, Pushes, and Losses only.
+- Play and Train store the first mistake as a visual card-and-board review item.
+- Strategy mistakes are not announced on the Play table.
+- Train shows the best play for each street reached after the hand.
+- Train has a simplified table heading and statistics: Hands and Accuracy.
 - Accuracy is the percentage of complete hands played perfectly.
-- Only the first strategic mistake in a hand is recorded.
-- Train mode contains no dealer hand and ends at the first mistake.
-- Exact 169-class preflop strategy map and blackjack-style chart.
-- Exact flop lookup through the El Jefe human-readable rules plus 15,918 certified canonical exceptions.
-- Exact river decisions calculated locally by enumerating all 990 possible dealer hands.
-- Look Up reachability warnings for off-path flop decisions and exact answers for all river positions.
-- El Jefe Strategy — Intermediate and Wizard of Odds Strategy — Beginner comparisons after the flop.
-- El Jefe river strategy is deliberately labeled **in development** in this preview.
+- Green plus and red minus indicators show whether the latest hand was perfect.
+- Look Up uses one progressive card-entry flow with a context-sensitive search button.
+- Strategy guides use a dropdown for Preflop, Post-Flop, and River.
+- The preflop chart is triangular, display-only, includes pairs, and uses larger action lettering.
+- Look Up cards match the typography and proportions of the other Casa del Jefe trainers.
+- User-facing technical certification language is omitted.
 
-## Strategy data status
+## Strategy behavior
 
-The preflop classes through K6o are from the completed certified production run. K7o–KQo and A2o–AKo are included as user-approved automatic 4x raises pending the final audit run.
+- Preflop decisions use the complete starting-hand chart.
+- Reachable post-flop decisions use the compact rule-plus-exception lookup.
+- River decisions are calculated locally from all 990 possible dealer hands.
+- Post-flop positions that cannot occur after the best preflop play are reported as unreachable.
+- River positions still receive a recommendation even when an earlier decision was off the best path.
 
 ## Run
 

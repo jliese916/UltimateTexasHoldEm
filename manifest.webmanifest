@@ -1,7 +1,7 @@
 {
   "name": "Casa del Jefe — The Ultimate Hold’em Parlor",
   "short_name": "Ultimate Hold’em",
-  "description": "Ultimate Texas Hold’em play, exact decision training, and optimal strategy lookup.",
+  "description": "Ultimate Texas Hold’em play, optimal decision training and best-play lookup.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#07100d",
