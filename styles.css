@@ -2611,3 +2611,85 @@ footer{color:var(--casa-muted)}
 /* v10: simplified Train room title */
 .train-wordmark{margin-bottom:7px!important}
 .train-wordmark span{font-size:1.05rem;letter-spacing:.12em;text-transform:none}
+
+/* Version 11 refinements */
+.train-wordmark{
+  margin:0 auto 9px!important;
+  color:var(--casa-gold-soft);
+  font-family:Georgia,"Times New Roman",serif;
+  text-align:center;
+}
+.train-wordmark span{
+  font-size:1.28rem!important;
+  font-weight:900;
+  letter-spacing:.20em!important;
+  text-transform:uppercase!important;
+}
+.lookup-intro p{
+  max-width:610px;
+  margin:0 auto 18px!important;
+  color:var(--casa-muted)!important;
+  text-align:center;
+}
+.strategy-guide-stack{gap:12px;margin-top:20px}
+.strategy-guide-details{
+  overflow:hidden;
+  padding:0;
+  border:1px solid rgba(216,181,100,.34);
+  border-radius:15px;
+  background:rgba(3,17,13,.72);
+}
+.strategy-guide-details>summary{
+  padding:14px 16px;
+  color:var(--casa-gold-soft);
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:.96rem;
+  font-weight:900;
+  cursor:pointer;
+  text-align:center;
+  list-style:none;
+}
+.strategy-guide-details>summary::-webkit-details-marker{display:none}
+.strategy-guide-details>summary::after{content:" +";font-family:system-ui,sans-serif;font-weight:950}
+.strategy-guide-details[open]>summary{
+  border-bottom:1px solid rgba(216,181,100,.25);
+  background:rgba(30,75,59,.48);
+}
+.strategy-guide-details[open]>summary::after{content:" −"}
+.strategy-guide-body{padding:2px 12px 13px}
+.preflop-chart-legend .key-suited{min-width:39px}
+.preflop-chart-cell{
+  font-size:.96rem!important;
+  letter-spacing:-.035em;
+  pointer-events:none!important;
+  cursor:default!important;
+}
+.preflop-strategy-table th{font-size:.80rem!important}
+.challenge-panel{padding-inline:12px}
+.challenge-heading-row h2,#challengeProgress{color:var(--casa-gold-soft)!important}
+.challenge-kicker{color:var(--casa-gold)!important}
+.challenge-instructions{
+  max-width:660px;
+  margin:0 auto 14px!important;
+  color:var(--casa-muted)!important;
+  font-size:.84rem;
+  line-height:1.5;
+  text-align:center;
+}
+.challenge-uth-table{margin-top:8px}
+.challenge-wordmark span{
+  font-size:1rem;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+.challenge-mistake-review{margin-top:16px;text-align:left}
+.challenge-summary-actions button{color:var(--casa-ink)}
+.challenge-summary-actions .primary{color:#132019}
+@media(max-width:560px){
+  .preflop-chart-cell{font-size:.82rem!important}
+  .strategy-guide-details>summary{padding-inline:10px;font-size:.86rem}
+}
+@media(max-width:390px){
+  .preflop-chart-cell{font-size:.75rem!important}
+  .train-wordmark span{font-size:1.14rem!important}
+}

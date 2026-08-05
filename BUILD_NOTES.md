@@ -1,14 +1,11 @@
-# Build notes — v10
+# Build Notes — v11
 
-Validation checklist:
-
-- JavaScript syntax checks pass for all scripts.
-- Play summary contains only Hands, Wins, Pushes, and Losses.
-- Play and Train preserve first-mistake-only scoring and visual review.
-- Train title is simply “Train.”
-- Train recap lists the best action for every street reached.
-- Progressive Look Up recognizes preflop, post-flop, and river card counts.
-- Search is disabled for incomplete community boards.
-- Strategy guides switch through a dropdown rather than street tabs.
-- Preflop chart contains 91 populated, non-interactive cells.
-- Lookup card typography is aligned with the other Casa del Jefe trainers.
+- Enabled a 100-hand El Jefe Challenge.
+- Certification threshold: 95/100 perfectly played hands.
+- Grand Master threshold: 100/100.
+- Updated Train initial text and room masthead.
+- Simplified Look Up introduction and removed the Current Decision badge.
+- Replaced the strategy selector with three collapsible strategy guides.
+- Reoriented the triangular preflop chart: rows A-to-2, columns 2-to-A.
+- Changed suited-only chart notation to 4XS.
+- Retained optimal scoring, first-mistake tracking, exact flop lookup, and on-demand river calculation.

@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "10";
+  const APP_VERSION = "11";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -72,7 +72,6 @@
     trainMistakeList: $("#trainMistakeList"),
     resetTrain: $("#resetTrain"),
 
-    lookupStageLabel: $("#lookupStageLabel"),
     lookupBoardGroup: $("#lookupBoardGroup"),
     lookupBoardHelp: $("#lookupBoardHelp"),
     lookupPlayerSlots: $("#lookupPlayerSlots"),
@@ -86,11 +85,19 @@
     lookupMessage: $("#lookupMessage"),
     lookupResult: $("#lookupResult"),
     lookupStrategyResults: $("#lookupStrategyResults"),
-    strategyGuideSelect: $("#strategyGuideSelect"),
-    guidePreflop: $("#guidePreflop"),
-    guideFlop: $("#guideFlop"),
-    guideRiver: $("#guideRiver"),
     preflopChartContainer: $("#preflopChartContainer"),
+
+    challengeLaunch: $("#challengeLaunch"),
+    challengePanel: $("#challengePanel"),
+    challengeGame: $("#challengeGame"),
+    challengeProgress: $("#challengeProgress"),
+    challengeExit: $("#challengeExit"),
+    challengeCommunity: $("#challengeCommunity"),
+    challengePlayer: $("#challengePlayer"),
+    challengeMessage: $("#challengeMessage"),
+    challengeActions: $("#challengeActions"),
+    challengeSummary: $("#challengeSummary"),
+    modeTabs: $("#modeTabs"),
 
     updateNotice: $("#updateNotice"),
     reloadUpdate: $("#reloadUpdate")
@@ -108,6 +115,14 @@
       activeSlot: 0,
       pendingRank: null,
       resultSignature: null
+    },
+    challenge: {
+      active: false,
+      finished: false,
+      completedHands: 0,
+      correct: 0,
+      misses: [],
+      round: null
     }
   };
 
@@ -961,7 +976,7 @@
     el.trainDeal.textContent = round && round.completed ? "Deal Next" : "Deal";
     el.trainFeedback.classList.remove("correct");
     if (!round) {
-      el.trainMessage.textContent = "Press Deal to begin a decision hand.";
+      el.trainMessage.textContent = "Press Deal to begin.";
       el.trainFeedback.classList.add("hidden");
     } else if (round.completed) {
       el.trainMessage.textContent = round.perfect ? "Hand played perfectly." : "Hand complete.";
@@ -1117,13 +1132,6 @@
     return `<span class="lookup-action-badge action-${action}">${ACTION_LABELS[action]}</span>`;
   }
 
-  function setStrategyGuide(street) {
-    const value = street === "flop" ? "flop" : street === "river" ? "river" : "preflop";
-    el.strategyGuideSelect.value = value;
-    el.guidePreflop.classList.toggle("hidden", value !== "preflop");
-    el.guideFlop.classList.toggle("hidden", value !== "flop");
-    el.guideRiver.classList.toggle("hidden", value !== "river");
-  }
 
   function renderBestLookup() {
     const street = lookupStage();
@@ -1170,7 +1178,6 @@
     el.lookupMessage.textContent = reachable ? "Best play found." : street === "river" ? "River play found; the position is off the optimal path." : "An earlier best play prevents this decision.";
     if (street !== "preflop" && (street === "river" || reachable)) renderSimplifiedLookup(street);
     else el.lookupStrategyResults.classList.add("hidden");
-    setStrategyGuide(street);
   }
 
   function renderSimplifiedLookup(street = lookupStage()) {
@@ -1210,7 +1217,6 @@
     el.lookupPickerLabel.textContent = state.lookup.pendingRank === null ? `Choose a rank for ${slotLabel}` : `Choose a suit for ${E.RANK_LABELS[state.lookup.pendingRank]}`;
     el.lookupRemove.disabled = !state.lookup.cards[state.lookup.activeSlot];
     const progress = lookupProgress();
-    el.lookupStageLabel.textContent = progress.label;
     el.lookupSearch.textContent = progress.button;
     el.lookupSearch.disabled = !progress.ready;
     const signature = lookupCardSignature();
@@ -1224,33 +1230,34 @@
   function buildPreflopChart() {
     const table = document.createElement("table");
     table.className = "preflop-strategy-table triangular-chart";
+    const rowRanks = [...CHART_RANKS];
+    const columnRanks = [...CHART_RANKS].reverse();
+    const rankValue = rank => ({ A:14, K:13, Q:12, J:11, T:10, 9:9, 8:8, 7:7, 6:6, 5:5, 4:4, 3:3, 2:2 })[rank];
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
-    headRow.innerHTML = `<th class="corner-cell"><span>Low ↓</span><span>High →</span></th>${CHART_RANKS.map(rank => `<th>${rank}</th>`).join("")}`;
+    headRow.innerHTML = `<th class="corner-cell"><span>High ↓</span><span>Low →</span></th>${columnRanks.map(rank => `<th>${rank}</th>`).join("")}`;
     thead.append(headRow);
     const tbody = document.createElement("tbody");
-    const rowRanks = [...CHART_RANKS].reverse();
-    const rankValue = rank => CHART_RANKS.length - CHART_RANKS.indexOf(rank) + 1;
     for (const rowRank of rowRanks) {
       const row = document.createElement("tr");
       const rowHeader = document.createElement("th");
       rowHeader.textContent = rowRank;
       row.append(rowHeader);
-      for (const colRank of CHART_RANKS) {
+      for (const colRank of columnRanks) {
         const cell = document.createElement("td");
-        if (rankValue(colRank) < rankValue(rowRank)) {
+        if (rankValue(colRank) > rankValue(rowRank)) {
           cell.className = "preflop-chart-empty";
           row.append(cell);
           continue;
         }
-        const key = `${colRank}${rowRank}`;
+        const key = `${rowRank}${colRank}`;
         const category = D.preflopChart[key];
-        const code = category === "always" ? "4X" : category === "suited" ? "4X S" : "C";
+        const code = category === "always" ? "4X" : category === "suited" ? "4XS" : "C";
         const marker = document.createElement("span");
         marker.className = `preflop-chart-cell cell-${category}`;
         marker.textContent = code;
         const detail = category === "always" ? "Raise 4x suited or offsuit" : category === "suited" ? "Raise 4x only when suited; check offsuit" : "Check suited or offsuit";
-        marker.title = `${colRank}${rowRank}: ${detail}`;
+        marker.title = `${key}: ${detail}`;
         cell.append(marker);
         row.append(cell);
       }
@@ -1348,8 +1355,131 @@
     ctx.fill();
   }
 
+  function resetChallengeState() {
+    state.challenge = { active: true, finished: false, completedHands: 0, correct: 0, misses: [], round: null };
+  }
+
+  function startChallenge() {
+    resetChallengeState();
+    el.challengeLaunch.classList.add("hidden");
+    el.modeTabs.classList.add("hidden");
+    Object.values(el.panels).forEach(panel => panel.classList.add("hidden"));
+    el.challengePanel.classList.remove("hidden");
+    el.challengeGame.classList.remove("hidden");
+    el.challengeSummary.classList.add("hidden");
+    newChallengeHand();
+  }
+
+  function newChallengeHand() {
+    const challenge = state.challenge;
+    if (!challenge.active || challenge.finished) return;
+    if (challenge.completedHands >= 100) {
+      finishChallenge();
+      return;
+    }
+    challenge.round = newTrainRound();
+    renderChallenge();
+  }
+
+  function challengePrompt(stage) {
+    if (stage === "preflop") return "Choose Check, Raise 3x, or Raise 4x.";
+    if (stage === "flop") return "Choose Check or Raise 2x.";
+    return "Choose Call 1x or Fold.";
+  }
+
+  function renderChallenge() {
+    const challenge = state.challenge;
+    const round = challenge.round;
+    if (!round) return;
+    el.challengeProgress.textContent = `Hand ${challenge.completedHands + 1} of 100`;
+    renderCommunityRow(el.challengeCommunity, round, true);
+    renderCardRow(el.challengePlayer, round.playerCards, 2, 2);
+    el.challengeActions.replaceChildren();
+    if (!round.completed) availableActions(round.stage).forEach(item => el.challengeActions.append(actionButton(item, takeChallengeAction)));
+    el.challengeMessage.textContent = challengePrompt(round.stage);
+  }
+
+  function completeChallengeHand(round) {
+    const challenge = state.challenge;
+    if (round.counted) return;
+    round.counted = true;
+    round.completed = true;
+    challenge.completedHands += 1;
+    if (round.perfect) challenge.correct += 1;
+    else if (round.firstMistake) challenge.misses.push(mistakeSnapshot(round, challenge.completedHands));
+    if (challenge.completedHands >= 100) {
+      finishChallenge();
+      return;
+    }
+    window.setTimeout(newChallengeHand, 120);
+  }
+
+  function takeChallengeAction(action) {
+    const challenge = state.challenge;
+    const round = challenge.round;
+    if (!challenge.active || challenge.finished || !round || round.completed) return;
+    if (!availableActions(round.stage).some(item => item.action === action)) return;
+    const optimal = gradeDecision(round, action);
+    round.decisions.push({ stage: round.stage, chosen: action, optimal: optimal.action, acceptable: optimal.acceptableActions.slice() });
+    if (round.firstMistake) {
+      completeChallengeHand(round);
+      return;
+    }
+    if (round.stage === "preflop") {
+      if (action === "check") { round.stage = "flop"; round.boardVisible = 3; }
+      else completeChallengeHand(round);
+    } else if (round.stage === "flop") {
+      if (action === "check") { round.stage = "river"; round.boardVisible = 5; }
+      else completeChallengeHand(round);
+    } else {
+      completeChallengeHand(round);
+    }
+    if (!round.completed) renderChallenge();
+  }
+
+  function challengeReviewMarkup(misses) {
+    if (!misses.length) return "";
+    return `<details class="mistake-review challenge-mistake-review"><summary>Review mistakes (${misses.length})</summary><div class="mistake-list">${misses.slice().reverse().map(mistake => {
+      const board = mistake.board.length ? `<div class="mistake-card-group"><small>Board</small><div class="mistake-mini-hand">${mistake.board.map(miniCardMarkup).join("")}</div></div>` : "";
+      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>Optimal play</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div></article>`;
+    }).join("")}</div></details>`;
+  }
+
+  function finishChallenge() {
+    const challenge = state.challenge;
+    challenge.finished = true;
+    const percent = challenge.correct;
+    const passed = challenge.correct >= 95;
+    const perfect = challenge.correct === 100;
+    const today = new Intl.DateTimeFormat(undefined, { year: "numeric", month: "long", day: "numeric" }).format(new Date());
+    let resultMarkup;
+    if (perfect) {
+      resultMarkup = `<div class="certificate grand-master"><div class="grand-master-rays" aria-hidden="true"></div><div class="grand-master-stars" aria-hidden="true">♠ · ♦ · ♣ · ♥</div><div class="certificate-small">CASA DEL JEFE · HALL OF MASTERS</div><div class="certificate-title">ULTIMATE HOLD’EM<br>GRAND MASTER</div><div class="certificate-rule"></div><p>This certifies a flawless performance in the 100-hand El Jefe Ultimate Hold’em Challenge.</p><div class="certificate-score">100 / 100 · 100%</div><div class="grand-master-crest" aria-hidden="true">♛</div><div class="grand-master-subtitle">Perfect Strategy</div><p>Certified by El Jefe</p><p>${today}</p><div class="certificate-share">Screenshot this Grand Master certificate and share it with the table.</div></div>`;
+    } else if (passed) {
+      resultMarkup = `<div class="certificate"><div class="certificate-small">CERTIFICATE OF ULTIMATE HOLD’EM READINESS</div><div class="certificate-title">EL JEFE APPROVED</div><div class="certificate-rule"></div><p>This certifies that the bearer completed the 100-hand El Jefe Ultimate Hold’em Challenge with:</p><div class="certificate-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><p>You are approved to play Ultimate Texas Hold’em at Casa del Jefe.</p><p>${today}</p><div class="certificate-share">Screenshot this certificate and share it with the table.</div></div>`;
+    } else {
+      resultMarkup = `<div class="challenge-fail"><h2>Not quite El Jefe approved</h2><div class="challenge-final-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><p>Score at least 95% to earn certification. Review the mistakes, practice, and try again.</p></div>`;
+    }
+    el.challengeGame.classList.add("hidden");
+    el.challengeSummary.innerHTML = `${resultMarkup}${challengeReviewMarkup(challenge.misses)}<div class="challenge-summary-actions"><button class="primary" id="challengeAgain" type="button">Try Again</button><button id="challengeDone" type="button">Done</button></div>`;
+    el.challengeSummary.classList.remove("hidden");
+    $("#challengeAgain").addEventListener("click", startChallenge);
+    $("#challengeDone").addEventListener("click", exitChallenge);
+  }
+
+  function exitChallenge() {
+    state.challenge.active = false;
+    state.challenge.finished = false;
+    state.challenge.round = null;
+    el.challengePanel.classList.add("hidden");
+    el.challengeLaunch.classList.remove("hidden");
+    el.modeTabs.classList.remove("hidden");
+    setMode(state.mode);
+  }
+
   function setMode(mode) {
     state.mode = mode;
+    if (el.challengePanel) el.challengePanel.classList.add("hidden");
     el.tabs.forEach(tab => {
       const active = tab.dataset.mode === mode;
       tab.classList.toggle("active", active);
@@ -1382,7 +1512,8 @@
   el.lookupRemove.addEventListener("click", removeLookupCard);
   el.lookupClear.addEventListener("click", clearLookup);
   el.lookupSearch.addEventListener("click", renderBestLookup);
-  el.strategyGuideSelect.addEventListener("change", () => setStrategyGuide(el.strategyGuideSelect.value));
+  el.challengeLaunch.addEventListener("click", startChallenge);
+  el.challengeExit.addEventListener("click", exitChallenge);
 
   window.addEventListener("keydown", event => {
     if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return;
@@ -1396,6 +1527,9 @@
     } else if (state.mode === "train" && shortcuts[key]) {
       event.preventDefault();
       takeTrainAction(shortcuts[key]);
+    } else if (state.challenge.active && !state.challenge.finished && shortcuts[key]) {
+      event.preventDefault();
+      takeChallengeAction(shortcuts[key]);
     } else if ((state.mode === "play" || state.mode === "train") && event.key === "Enter") {
       event.preventDefault();
       if (state.mode === "play" && !el.playDeal.disabled) startPlayHand();
@@ -1411,7 +1545,16 @@
     canonicalFlopKey,
     exactFlopDecision,
     exactRiverDecision,
-    wizardRiverDecision
+    wizardRiverDecision,
+    startChallenge,
+    exitChallenge,
+    showChallengeScore(correct) {
+      startChallenge();
+      state.challenge.completedHands = 100;
+      state.challenge.correct = Math.max(0, Math.min(100, Number(correct) || 0));
+      state.challenge.misses = [];
+      finishChallenge();
+    }
   };
 
   buildPreflopChart();

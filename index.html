@@ -11,7 +11,7 @@
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./favicon-64.png" rel="icon" type="image/png"/>
 <link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="./styles.css?v=10" rel="stylesheet"/>
+<link href="./styles.css?v=11" rel="stylesheet"/>
 </head>
 <body>
 <main class="app">
@@ -42,7 +42,7 @@
 </div>
 <div aria-hidden="true" class="castle-tower tower-right"><div class="tower-crenels"><i></i><i></i><i></i></div><span class="tower-suit club">♣</span></div>
 </header>
-<div class="challenge-launch"><button aria-disabled="true" class="challenge-button challenge-coming-soon" id="challengeLaunch" title="Challenge mode is coming later" type="button"><span>Take the</span><strong>El Jefe Challenge</strong></button></div>
+<div class="challenge-launch"><button class="challenge-button" id="challengeLaunch" type="button"><span>Take the</span><strong>El Jefe Challenge</strong></button></div>
 <nav aria-label="App mode" class="mode-tabs" id="modeTabs">
 <button aria-selected="true" class="mode-tab active" data-mode="play" type="button">Play</button>
 <button aria-selected="false" class="mode-tab" data-mode="train" type="button">Train</button>
@@ -90,14 +90,14 @@
 
 <section class="panel hidden train-panel" id="trainPanel">
 <div class="lir-table uth-table train-table">
-<div class="lir-wordmark train-wordmark"><span>Train</span></div>
+<div class="lir-wordmark train-wordmark"><span>TRAIN</span></div>
 <div aria-label="Train statistics" class="play-topline lir-topline train-topline">
 <div><small>Hands</small><strong id="trainHands">0</strong></div>
 <div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="trainAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="trainDecisionIndicator"></span></span></div>
 </div>
 <div class="lir-zone community-zone uth-community-zone yellow-card-zone"><div class="zone-label light">Community</div><div class="hand five-card-hand" id="trainCommunity"></div></div>
 <div class="lir-zone player-zone uth-player-zone"><div class="zone-label light">Player</div><div class="hand two-card-hand" id="trainPlayer"></div></div>
-<div aria-live="polite" class="play-message lir-message uth-message" id="trainMessage">Press Deal to begin a decision hand.</div>
+<div aria-live="polite" class="play-message lir-message uth-message" id="trainMessage">Press Deal to begin.</div>
 <div aria-live="polite" class="strategy-feedback hidden" id="trainFeedback"></div>
 <div aria-label="Training actions" class="uth-action-row" id="trainActions"></div>
 <button class="deal-button table-hand-button uth-deal-button" id="trainDeal" type="button">Deal</button>
@@ -110,11 +110,8 @@
 
 <section class="panel hidden lookup-panel" id="lookupPanel">
 <section class="lookup-intro">
-<div class="construction-kicker">Strategy Desk</div>
-<h2>Look Up a Decision</h2>
-<p>Enter your two cards, then add community cards when needed. The lookup will recognize whether you are asking about preflop, post-flop, or river play.</p>
+<p>Enter your two cards, then add three community cards for a post-flop decision or all five community cards for a river decision.</p>
 </section>
-<div class="lookup-stage-status" aria-live="polite"><small>Current decision</small><strong id="lookupStageLabel">Preflop</strong></div>
 <div class="lookup-hands">
 <section class="lookup-group">
 <div class="lookup-heading"><strong>Player</strong><small>Choose two hole cards</small></div>
@@ -137,26 +134,21 @@
 <div aria-live="polite" class="lookup-result hidden" id="lookupResult"></div>
 <div class="lookup-strategy-results hidden" id="lookupStrategyResults"></div>
 <section class="strategy-guide-stack" aria-label="Strategy guides">
-<div class="strategy-guide-selector">
-<label for="strategyGuideSelect">Strategy guide</label>
-<select id="strategyGuideSelect">
-<option value="preflop">Preflop</option>
-<option value="flop">Post-Flop</option>
-<option value="river">River</option>
-</select>
-</div>
-<div class="strategy-guide-panel" id="guidePreflop">
-<h3>Preflop Strategy</h3>
+<details class="strategy-guide-details" id="preflopStrategyDetails">
+<summary>Optimal Preflop Play</summary>
+<div class="strategy-guide-body">
 <p class="strategy-guide-intro">Use the chart to raise 4x always, raise only when suited, or check.</p>
 <div class="preflop-chart-legend">
 <span><i class="preflop-key key-always">4X</i> Raise suited or offsuit</span>
-<span><i class="preflop-key key-suited">4X S</i> Raise only when suited</span>
+<span><i class="preflop-key key-suited">4XS</i> Raise only when suited</span>
 <span><i class="preflop-key key-check">C</i> Check</span>
 </div>
 <div class="strategy-table-container" id="preflopChartContainer"></div>
-<p class="chart-note">Columns run from Ace down to deuce; rows run from deuce up to Ace. Each starting-hand combination appears once, with pairs on the diagonal.</p>
 </div>
-<div class="strategy-guide-panel hidden" id="guideFlop">
+</details>
+<details class="strategy-guide-details" id="postflopStrategyDetails">
+<summary>Post-Flop Play — El Jefe &amp; Wizard of Odds</summary>
+<div class="strategy-guide-body">
 <div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><ol>
 <li>Raise 2x with a straight or better.</li>
 <li>Raise with a hidden pair made with a non-pocket starting hand.</li>
@@ -174,7 +166,10 @@
 <li>Otherwise check.</li>
 </ol></div>
 </div>
-<div class="strategy-guide-panel hidden" id="guideRiver">
+</details>
+<details class="strategy-guide-details" id="riverStrategyDetails">
+<summary>River Play — El Jefe &amp; Wizard of Odds</summary>
+<div class="strategy-guide-body">
 <div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><p class="under-construction">Under construction. The best river play is still available through Look Up.</p></div>
 <div class="strategy-guide-card strategy-wizard"><h3>Wizard of Odds Strategy <span>Beginner</span></h3><ol>
 <li>Call 1x with a hidden pair or better.</li>
@@ -182,7 +177,26 @@
 <li>Otherwise fold.</li>
 </ol></div>
 </div>
+</details>
 </section>
+</section>
+
+<section class="panel challenge-panel hidden" id="challengePanel">
+<div id="challengeGame">
+<div class="challenge-heading-row">
+<div><div class="challenge-kicker">EL JEFE CHALLENGE</div><h2 id="challengeProgress">Hand 1 of 100</h2></div>
+<button class="challenge-exit" id="challengeExit" type="button">Exit</button>
+</div>
+<p class="challenge-instructions">Play 100 decision hands with no feedback until the final score. A hand counts as correct only when every decision is optimal. Score 95% or better to earn certification; score 100% to become a Grand Master.</p>
+<div class="lir-table uth-table train-table challenge-uth-table">
+<div class="lir-wordmark challenge-wordmark"><span>EL JEFE CHALLENGE</span></div>
+<div class="lir-zone community-zone uth-community-zone yellow-card-zone"><div class="zone-label light">Community</div><div class="hand five-card-hand" id="challengeCommunity"></div></div>
+<div class="lir-zone player-zone uth-player-zone"><div class="zone-label light">Player</div><div class="hand two-card-hand" id="challengePlayer"></div></div>
+<div aria-live="polite" class="play-message lir-message uth-message" id="challengeMessage">Choose the best play.</div>
+<div aria-label="Challenge actions" class="uth-action-row" id="challengeActions"></div>
+</div>
+</div>
+<div class="hidden" id="challengeSummary"></div>
 </section>
 
 <footer>
@@ -192,8 +206,8 @@
 </div>
 </footer>
 </main>
-<script src="./poker-engine.js?v=10"></script>
-<script src="./strategy-data.js?v=10"></script>
-<script defer src="./app.js?v=10"></script>
+<script src="./poker-engine.js?v=11"></script>
+<script src="./strategy-data.js?v=11"></script>
+<script defer src="./app.js?v=11"></script>
 </body>
 </html>
