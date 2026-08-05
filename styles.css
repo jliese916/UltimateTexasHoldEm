@@ -2884,3 +2884,78 @@ footer{color:var(--casa-muted)}
 @media(max-width:390px){
   .train-wordmark span{font-size:.82rem!important}
 }
+
+
+/* Ultimate Hold'em Parlor v14: shared strategy terminology and certificate polish */
+.strategy-terms-card{
+  padding:14px 15px;
+  border:1px solid rgba(216,181,100,.38);
+  border-radius:13px;
+  background:rgba(7,23,18,.56);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.strategy-terms-card h3{margin:0 0 9px;color:#f1d992;font-size:.96rem;letter-spacing:.035em}
+.strategy-terms-list{display:grid;gap:8px;margin:0}
+.strategy-terms-list>div{display:grid;grid-template-columns:minmax(125px,.42fr) 1fr;gap:10px;padding-top:8px;border-top:1px solid rgba(216,181,100,.16)}
+.strategy-terms-list>div:first-child{padding-top:0;border-top:0}
+.strategy-terms-list dt{color:#f8f1df;font-size:.79rem;font-weight:900}
+.strategy-terms-list dd{margin:0;color:#cbbf9f;font-size:.78rem;line-height:1.42}
+.strategy-order-note{margin:0 0 9px!important;color:#d9cfb4!important;font-size:.79rem;font-style:italic}
+.strategy-guide-card li em{color:#f1d992;font-style:normal;font-weight:900}
+
+.certificate{
+  text-align:center;
+  isolation:isolate;
+}
+.certificate::before{
+  content:"♛";
+  position:absolute;
+  z-index:0;
+  inset:20% 0 auto;
+  color:rgba(154,102,14,.075);
+  font-size:13rem;
+  line-height:1;
+  pointer-events:none;
+}
+.certificate>*{position:relative;z-index:1}
+.certificate-approved{
+  border-color:#b8860b;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.3),transparent 33%),
+    radial-gradient(circle at 50% 25%,#fffef6 0,#fff7d2 66%,#ecd28b 100%);
+}
+.certificate-approved .certificate-small{color:#75500b}
+.certificate-approved .certificate-title{line-height:.94;text-shadow:0 1px 0 #fff8dc}
+.approved-seal,.grand-master-seal{
+  display:grid;
+  place-items:center;
+  width:88px;
+  height:88px;
+  margin:10px auto 7px;
+  border:2px solid #9b6a0d;
+  border-radius:50%;
+  background:radial-gradient(circle,#f8df87 0,#c99222 72%,#8a5a08 100%);
+  color:#402808;
+  box-shadow:0 0 0 5px rgba(184,134,11,.13),0 8px 18px rgba(72,45,5,.24);
+  transform:rotate(-4deg);
+}
+.approved-seal span,.grand-master-seal span{font-size:1.7rem;font-weight:950;line-height:1}
+.approved-seal small,.grand-master-seal small{margin-top:-15px;font-size:.55rem;font-weight:950;letter-spacing:.1em}
+.certificate-declaration{max-width:440px;margin-inline:auto!important;font-size:1.04rem;font-weight:700}
+.certificate-date{margin-top:10px!important;font-size:.82rem}
+.certificate.grand-master::before{content:none}
+.grand-master-seal{
+  border-color:#f3c969;
+  background:radial-gradient(circle,#6b3aa1,#35115e 72%);
+  color:#f5d76e;
+  box-shadow:0 0 0 5px rgba(245,215,110,.12),0 8px 20px rgba(0,0,0,.25);
+}
+.grand-master-seal small{color:#f5d76e}
+.grand-master .certificate-signature{border-color:#f3c969;color:#fff0ad}
+.grand-master .certificate-signature-label{color:#d8c7ff}
+.grand-master .certificate-date{color:#f1eafb}
+@media(max-width:560px){
+  .strategy-terms-list>div{grid-template-columns:1fr;gap:3px}
+  .certificate-corner{font-size:1.35rem}
+  .approved-seal,.grand-master-seal{width:80px;height:80px}
+}

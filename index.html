@@ -149,20 +149,31 @@
 <details class="strategy-guide-details" id="postflopStrategyDetails">
 <summary>Flop Strategies</summary>
 <div class="strategy-guide-body">
-<div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><ol>
-<li>Raise 2x with a straight or better.</li>
-<li>Raise with a hidden pair made with a non-pocket starting hand.</li>
-<li>With 22, raise when the flop contains a deuce or the flop itself is three of a kind; otherwise check.</li>
-<li>Raise with four to a flush containing a hidden ten or higher, except a bare ten-high flush draw with an offsuit Tx hand, no pair, and no one-card straight draw.</li>
-<li>With T9 or J9, raise an eight-out straight draw unless both hole cards are higher than every flop card.</li>
-<li>With 96s, 97s, or 98s, raise any four-flush.</li>
-<li>With K2o, K3o, or K4o, raise K-high on an ace-containing paired flop or a three-of-a-kind flop.</li>
-<li>Otherwise check.</li>
+<div class="strategy-terms-card">
+<h3>Flop Strategy Terms</h3>
+<dl class="strategy-terms-list">
+<div><dt>Hidden pair</dt><dd>A pair formed by matching at least one of your hole cards with a card on the flop.</dd></div>
+<div><dt>Four-card flush</dt><dd>Four of the five known cards—your two hole cards and the three flop cards—have the same suit.</dd></div>
+<div><dt>Outside straight draw</dt><dd>Four consecutive ranks that can complete a straight at either end. This is also called an open-ended straight draw.</dd></div>
+<div><dt>Inside straight draw</dt><dd>A straight draw that needs a missing rank from inside the sequence.</dd></div>
+<div><dt>Double-inside straight draw</dt><dd>Two different inside ranks can complete a straight.</dd></div>
+</dl>
+</div>
+<div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><p class="strategy-order-note">Apply these rules in order. Raise 2x when the first applicable rule tells you to raise.</p><ol>
+<li><strong>Straight or better:</strong> Raise.</li>
+<li><strong>Pocket deuces:</strong> With 22, raise if the flop contains a deuce or if the flop is three of a kind. Otherwise, check.</li>
+<li><strong>Hidden pair:</strong> Raise.</li>
+<li><strong>Strong four-card flush:</strong> Raise when you have four cards to a flush and at least one of your hole cards in that suit is a ten or higher.<br><em>Exception:</em> With an offsuit Tx hand, check when the ten is your only hole card in the flush suit, you have no pair, and you have no inside or outside straight draw.</li>
+<li><strong>T9 or J9 straight draws:</strong> With T9 or J9, raise with an outside or double-inside straight draw.<br><em>Exception:</em> Check when both hole cards are higher than every card on the flop.</li>
+<li><strong>Small suited hands:</strong> With 96s, 97s, or 98s, raise with any four-card flush.</li>
+<li><strong>Small offsuit kings on an ace-containing paired flop:</strong> With K2o, K3o, or K4o, raise when the flop contains both an ace and a pair. This includes a pair of aces.</li>
+<li><strong>Small offsuit kings on a three-of-a-kind flop:</strong> With K2o, K3o, or K4o, raise when all three flop cards have the same rank.</li>
+<li><strong>Everything else:</strong> Check.</li>
 </ol></div>
 <div class="strategy-guide-card strategy-wizard"><h3>Wizard of Odds Strategy <span>Beginner</span></h3><ol>
 <li>Raise 2x with two pair or better.</li>
 <li>Raise with a hidden pair, except pocket deuces.</li>
-<li>Raise with four to a flush containing a hidden ten or higher.</li>
+<li>Raise with a four-card flush when at least one of your hole cards in that suit is a ten or higher.</li>
 <li>Otherwise check.</li>
 </ol></div>
 </div>
@@ -206,8 +217,8 @@
 </div>
 </footer>
 </main>
-<script src="./poker-engine.js?v=13"></script>
-<script src="./strategy-data.js?v=13"></script>
-<script defer src="./app.js?v=13"></script>
+<script src="./poker-engine.js?v=14"></script>
+<script src="./strategy-data.js?v=14"></script>
+<script defer src="./app.js?v=14"></script>
 </body>
 </html>

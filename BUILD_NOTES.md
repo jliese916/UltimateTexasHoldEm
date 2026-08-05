@@ -1,6 +1,6 @@
-# Build Notes — v13
+# Build Notes — v14
 
-- Challenge mode no longer ends a hand immediately after a preflop or flop mistake.
-- Only the first incorrect decision is retained for the final Review mistakes section.
-- Once the first mistake is recorded, later decisions are intentionally not graded.
-- TRAINING ROOM masthead size reduced to match the other trainers.
+- Strategy engine and exact lookup data are unchanged.
+- User-facing flop guidance was rewritten and aligned with the agreed terminology.
+- Challenge certificate markup and styling were expanded for consistency with the other Casa del Jefe trainers.
+- Cache and asset versions advanced to 14.

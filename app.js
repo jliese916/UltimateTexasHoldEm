@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "13";
+  const APP_VERSION = "14";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -374,23 +374,23 @@
       rule = `Raise with ${evaluation.name.toLowerCase()} or better.`;
     } else if (hiddenPair) {
       action = "raise2";
-      rule = "Raise with a hidden pair from a non-pocket starting hand.";
+      rule = "Raise with a hidden pair.";
     } else if (pocket && evaluation.category >= 3) {
       action = "raise2";
-      rule = "With pocket deuces, raise when the flop makes a set or better.";
+      rule = "With pocket deuces, raise when the flop contains a deuce or the flop is three of a kind.";
     } else if (flush.fourFlush && flush.hiddenRank >= 10) {
       action = "raise2";
-      rule = "Raise with four to a flush containing a hidden ten or higher.";
+      rule = "Raise with a four-card flush when a hole card in that suit is a ten or higher.";
       const bareOffsuitTen = /^T[2-9]o$/.test(classLabel) && evaluation.category === 0 && straightOutCards === 0 && flush.hiddenRank === 10;
       if (bareOffsuitTen) {
         action = "check";
-        rule = "Check the bare ten-high flush draw with an offsuit Tx hand when there is no pair or one-card straight draw.";
+        rule = "With an offsuit Tx hand, check when the ten is your only hole card in the flush suit, you have no pair, and you have no inside or outside straight draw.";
       }
     }
 
     if (action === "check" && ["T9o", "T9s", "J9o"].includes(classLabel) && straightOutCards === 8 && !(board.maxRank < holeLow)) {
       action = "raise2";
-      rule = "With T9 or J9, raise an eight-out straight draw unless both hole cards are higher than every flop card.";
+      rule = "With T9 or J9, raise this outside or double-inside straight draw unless both hole cards are higher than every flop card.";
     }
 
     if (action === "check" && ["96s", "97s", "98s"].includes(classLabel) && flush.fourFlush) {
@@ -419,7 +419,7 @@
     const flush = fourFlushInfo(cards, playerCards);
     if (evaluation.category >= 2) return { action: "raise2", rule: `Raise with ${evaluation.name.toLowerCase()} or better.` };
     if (hiddenPair && !(pocket && playerCards[0].rank === 2)) return { action: "raise2", rule: "Raise with a hidden pair, except pocket deuces." };
-    if (flush.fourFlush && flush.hiddenRank >= 10) return { action: "raise2", rule: "Raise with four to a flush containing a hidden ten or higher." };
+    if (flush.fourFlush && flush.hiddenRank >= 10) return { action: "raise2", rule: "Raise with a four-card flush when a hole card in that suit is a ten or higher." };
     return { action: "check", rule: "No Wizard 2x-raise rule applies." };
   }
 
@@ -1459,9 +1459,9 @@
     const today = new Intl.DateTimeFormat(undefined, { year: "numeric", month: "long", day: "numeric" }).format(new Date());
     let resultMarkup;
     if (perfect) {
-      resultMarkup = `<div class="certificate grand-master"><div class="grand-master-rays" aria-hidden="true"></div><div class="grand-master-stars" aria-hidden="true">♠ · ♦ · ♣ · ♥</div><div class="certificate-small">CASA DEL JEFE · HALL OF MASTERS</div><div class="certificate-title">ULTIMATE HOLD’EM<br>GRAND MASTER</div><div class="certificate-rule"></div><p>This certifies a flawless performance in the 100-hand El Jefe Ultimate Hold’em Challenge.</p><div class="certificate-score">100 / 100 · 100%</div><div class="grand-master-crest" aria-hidden="true">♛</div><div class="grand-master-subtitle">Perfect Strategy</div><p>Certified by El Jefe</p><p>${today}</p><div class="certificate-share">Screenshot this Grand Master certificate and share it with the table.</div></div>`;
+      resultMarkup = `<div class="certificate grand-master"><div class="grand-master-rays" aria-hidden="true"></div><span class="certificate-corner top-left" aria-hidden="true">♠</span><span class="certificate-corner red top-right" aria-hidden="true">♥</span><span class="certificate-corner red bottom-left" aria-hidden="true">♦</span><span class="certificate-corner bottom-right" aria-hidden="true">♣</span><div class="grand-master-stars" aria-hidden="true">♠ · ♦ · ♣ · ♥</div><div class="certificate-small">CASA DEL JEFE · HALL OF MASTERS</div><div class="certificate-title">ULTIMATE HOLD’EM<br>GRAND MASTER</div><div class="certificate-rule"></div><p>This certifies a flawless performance in the 100-hand El Jefe Ultimate Hold’em Challenge.</p><div class="certificate-score">100 / 100 · 100%</div><div class="grand-master-seal" aria-hidden="true"><span>♛</span><small>100%</small></div><div class="grand-master-subtitle">Perfect Strategy</div><div class="certificate-signature">El Jefe</div><div class="certificate-signature-label">Certified by Casa del Jefe</div><p class="certificate-date">${today}</p><div class="certificate-share">Screenshot this Grand Master certificate and share it with the table.</div></div>`;
     } else if (passed) {
-      resultMarkup = `<div class="certificate"><div class="certificate-small">CERTIFICATE OF ULTIMATE HOLD’EM READINESS</div><div class="certificate-title">EL JEFE APPROVED</div><div class="certificate-rule"></div><p>This certifies that the bearer completed the 100-hand El Jefe Ultimate Hold’em Challenge with:</p><div class="certificate-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><p>You are approved to play Ultimate Texas Hold’em at Casa del Jefe.</p><p>${today}</p><div class="certificate-share">Screenshot this certificate and share it with the table.</div></div>`;
+      resultMarkup = `<div class="certificate certificate-approved"><span class="certificate-corner top-left" aria-hidden="true">♠</span><span class="certificate-corner red top-right" aria-hidden="true">♥</span><span class="certificate-corner red bottom-left" aria-hidden="true">♦</span><span class="certificate-corner bottom-right" aria-hidden="true">♣</span><div class="certificate-small">CASA DEL JEFE · CERTIFICATE OF READINESS</div><div class="certificate-title">EL JEFE<br>APPROVED</div><div class="certificate-rule"></div><p>This certifies that the bearer completed the 100-hand El Jefe Ultimate Hold’em Challenge with:</p><div class="certificate-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><div class="approved-seal" aria-hidden="true"><span>♛</span><small>CERTIFIED</small></div><p class="certificate-declaration">Approved to play Ultimate Texas Hold’em at Casa del Jefe.</p><div class="certificate-signature">El Jefe</div><div class="certificate-signature-label">House Certification</div><p class="certificate-date">${today}</p><div class="certificate-share">Screenshot this certificate and share it with the table.</div></div>`;
     } else {
       resultMarkup = `<div class="challenge-fail"><h2>Not quite El Jefe approved</h2><div class="challenge-final-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><p>Score at least 95% to earn certification. Review the mistakes, practice, and try again.</p></div>`;
     }
