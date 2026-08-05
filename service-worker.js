@@ -1,7 +1,7 @@
 "use strict";
 
-const BUILD_VERSION = "18";
-const CACHE = "casa-ultimate-holdem-v18";
+const BUILD_VERSION = "19";
+const CACHE = "casa-ultimate-holdem-v19";
 const ASSETS = [
   "./index.html",
   "./styles.css?v=18",

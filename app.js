@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "18";
+  const APP_VERSION = "19";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
