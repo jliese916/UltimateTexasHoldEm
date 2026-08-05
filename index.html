@@ -7,11 +7,11 @@
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="Ultimate Hold'em Parlor" name="apple-mobile-web-app-title"/>
 <title>Casa del Jefe — The Ultimate Hold’em Parlor</title>
-<meta content="A polished Ultimate Texas Hold’em game simulator for practicing the core Ante, Blind, and Play wagering flow." name="description"/>
+<meta content="Play Ultimate Texas Hold’em, train exact decisions, and look up optimal preflop, flop, and river play." name="description"/>
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./favicon-64.png" rel="icon" type="image/png"/>
 <link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="./styles.css?v=6" rel="stylesheet"/>
+<link href="./styles.css?v=7" rel="stylesheet"/>
 </head>
 <body>
 <main class="app">
@@ -19,9 +19,7 @@
 <div aria-hidden="true" class="castle-tower tower-left"><div class="tower-crenels"><i></i><i></i><i></i></div><span class="tower-suit heart">♥</span></div>
 <div class="castle-hall">
 <div aria-hidden="true" class="hall-crenels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-<a aria-label="Return to Casa del Jefe" class="masthead-crest-link" href="https://jliese916.github.io/">
-<img alt="" aria-hidden="true" class="masthead-crest" src="./jefe-crest.svg"/>
-</a>
+<a aria-label="Return to Casa del Jefe" class="masthead-crest-link" href="https://jliese916.github.io/"><img alt="" aria-hidden="true" class="masthead-crest" src="./jefe-crest.svg"/></a>
 <div class="castle-kicker">Casa del Jefe</div>
 <h1>The Ultimate Hold’em Parlor</h1>
 <details class="header-paytable" id="paytableDetails">
@@ -44,33 +42,24 @@
 </div>
 <div aria-hidden="true" class="castle-tower tower-right"><div class="tower-crenels"><i></i><i></i><i></i></div><span class="tower-suit club">♣</span></div>
 </header>
-<div class="challenge-launch"><button aria-disabled="true" class="challenge-button challenge-coming-soon" id="challengeLaunch" title="Strategy scoring is under construction" type="button"><span>Take the</span><strong>El Jefe Challenge</strong></button></div>
+<div class="challenge-launch"><button aria-disabled="true" class="challenge-button challenge-coming-soon" id="challengeLaunch" title="Challenge mode is coming later" type="button"><span>Take the</span><strong>El Jefe Challenge</strong></button></div>
 <nav aria-label="App mode" class="mode-tabs" id="modeTabs">
 <button aria-selected="true" class="mode-tab active" data-mode="play" type="button">Play</button>
 <button aria-selected="false" class="mode-tab" data-mode="train" type="button">Train</button>
 <button aria-selected="false" class="mode-tab" data-mode="lookup" type="button">Look Up</button>
 </nav>
+
 <section class="panel play-panel" id="playPanel">
 <div class="lir-table uth-table">
-
 <div class="lir-wordmark"><span>CASA DEL JEFE</span><small>ULTIMATE TEXAS HOLD’EM</small></div>
 <div aria-label="Play statistics" class="play-topline lir-topline">
 <div><small>Balance</small><strong id="playBalance">0 units</strong></div>
-<div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="playDecisionIndicator"></span></span></div>
+<div class="play-accuracy-stat"><small>Perfect Hands</small><span class="play-accuracy-line"><strong id="playAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="playDecisionIndicator"></span></span></div>
 <div><small>Bet</small><strong>2 units</strong></div>
 </div>
-<div class="lir-zone dealer-zone red-card-zone">
-<div class="zone-label light">Dealer</div>
-<div class="hand two-card-hand" id="playDealer"></div>
-</div>
-<div class="lir-zone community-zone uth-community-zone yellow-card-zone">
-<div class="zone-label light">Community</div>
-<div class="hand five-card-hand" id="playCommunity"></div>
-</div>
-<div class="lir-zone player-zone uth-player-zone">
-<div class="zone-label light">Player</div>
-<div class="hand two-card-hand" id="playPlayer"></div>
-</div>
+<div class="lir-zone dealer-zone red-card-zone"><div class="zone-label light">Dealer</div><div class="hand two-card-hand" id="playDealer"></div></div>
+<div class="lir-zone community-zone uth-community-zone yellow-card-zone"><div class="zone-label light">Community</div><div class="hand five-card-hand" id="playCommunity"></div></div>
+<div class="lir-zone player-zone uth-player-zone"><div class="zone-label light">Player</div><div class="hand two-card-hand" id="playPlayer"></div></div>
 <div aria-label="Ante, Blind, and Play wagers" class="uth-wager-layout">
 <div class="uth-wager-cell uth-ante-cell"><div class="uth-wager-spot" id="anteSpot"><span>Ante</span><div class="uth-chip-stack" id="anteChips"></div></div></div>
 <div aria-hidden="true" class="uth-equals">=</div>
@@ -78,53 +67,117 @@
 <div class="uth-wager-cell uth-play-cell"><div class="uth-wager-spot" id="playSpot"><span>Play</span><div class="uth-chip-stack" id="playChips"></div></div></div>
 </div>
 <div aria-live="polite" class="play-message lir-message uth-message" id="playMessage">Press Deal to begin.</div>
+<div aria-live="polite" class="strategy-feedback hidden" id="playStrategyFeedback"></div>
 <div aria-label="Available actions" class="uth-action-row" id="playActions"></div>
 <button class="deal-button table-hand-button uth-deal-button" id="playDeal" type="button">Deal</button>
 </div>
 <section class="balance-card">
 <div class="balance-heading"><span>BANKROLL HISTORY</span></div>
 <div class="chart-legend" aria-hidden="true"><span><i class="legend-line legend-actual"></i>Your play</span></div>
-<div class="chart-pill pending" id="playDeltaSummary">Optimal play pending</div>
+<div class="chart-pill" id="playDeltaSummary">Accuracy is scored by perfectly played hands.</div>
 <canvas aria-label="Line chart showing your bankroll history" class="balance-chart" id="playBalanceChart" role="img"></canvas>
 </section>
 <section aria-label="Session review and controls" class="session-hub">
 <div class="session-heading"><strong>SESSION REVIEW</strong><button class="danger-link session-reset-button" id="resetPlay" type="button">Reset session</button></div>
-<div class="session-stats">
+<div class="session-stats five-stats">
 <div><small>Hands</small><strong id="completedHands">0</strong></div>
+<div><small>Perfect</small><strong id="playPerfectHands">0</strong></div>
 <div><small>Wins</small><strong id="playWins">0</strong></div>
 <div><small>Pushes</small><strong id="playPushes">0</strong></div>
 <div><small>Losses</small><strong id="playLosses">0</strong></div>
 </div>
-<p class="strategy-pending-note">Optimal-play comparison and accuracy will appear when the strategy dataset is ready.</p>
+<p class="strategy-pending-note">Accuracy counts the percentage of complete hands played perfectly. Only the first strategic mistake in a hand is recorded.</p>
 </section>
 </section>
-<section class="panel hidden construction-panel" id="trainPanel">
-<div class="construction-card">
-<div aria-hidden="true" class="construction-suits">♠ <span>♥</span> ♦ ♣</div>
-<div class="construction-kicker">Strategy engine pending</div>
-<h2>Train is under construction</h2>
-<p>Complete-hand strategy practice will be added when the optimal-play calculations are ready.</p>
+
+<section class="panel hidden train-panel" id="trainPanel">
+<div class="lir-table uth-table train-table">
+<div class="lir-wordmark"><span>DECISION TRAINER</span><small>NO DEALER HAND · EXACT OPTIMAL SCORING</small></div>
+<div aria-label="Train statistics" class="play-topline lir-topline train-topline">
+<div><small>Hands</small><strong id="trainHands">0</strong></div>
+<div><small>Perfect</small><strong id="trainAccuracy">NA</strong></div>
+<div><small>Street</small><strong id="trainStreet">—</strong></div>
 </div>
-</section>
-<section class="panel hidden construction-panel" id="lookupPanel">
-<div class="construction-card">
-<div aria-hidden="true" class="construction-suits">♠ <span>♥</span> ♦ ♣</div>
-<div class="construction-kicker">Strategy engine pending</div>
-<h2>Look Up is under construction</h2>
-<p>Card-by-card optimal action lookup will be added when the strategy dataset is complete.</p>
+<div class="train-no-dealer"><span aria-hidden="true">♠ ♥ ♦ ♣</span><strong>Dealer cards are intentionally omitted.</strong><small>Optimal decisions depend on all possible dealer hands, not one sampled hand.</small></div>
+<div class="lir-zone community-zone uth-community-zone yellow-card-zone"><div class="zone-label light">Community</div><div class="hand five-card-hand" id="trainCommunity"></div></div>
+<div class="lir-zone player-zone uth-player-zone"><div class="zone-label light">Player</div><div class="hand two-card-hand" id="trainPlayer"></div></div>
+<div aria-live="polite" class="play-message lir-message uth-message" id="trainMessage">Press Deal to begin a decision hand.</div>
+<div aria-live="polite" class="strategy-feedback hidden" id="trainFeedback"></div>
+<div aria-label="Training actions" class="uth-action-row" id="trainActions"></div>
+<button class="deal-button table-hand-button uth-deal-button" id="trainDeal" type="button">Deal</button>
 </div>
+<section aria-label="Training review and controls" class="session-hub">
+<div class="session-heading"><strong>TRAINING REVIEW</strong><button class="danger-link session-reset-button" id="resetTrain" type="button">Reset training</button></div>
+<div class="session-stats">
+<div><small>Hands</small><strong id="trainCompletedHands">0</strong></div>
+<div><small>Perfect</small><strong id="trainPerfectHands">0</strong></div>
+<div><small>Preflop Errors</small><strong id="trainPreflopErrors">0</strong></div>
+<div><small>Flop Errors</small><strong id="trainFlopErrors">0</strong></div>
+<div><small>River Errors</small><strong id="trainRiverErrors">0</strong></div>
+</div>
+<p class="strategy-pending-note">A wrong decision ends the training hand at the first mistake. Later off-path decisions are never scored.</p>
 </section>
+</section>
+
+<section class="panel hidden lookup-panel" id="lookupPanel">
+<section class="lookup-intro">
+<div class="construction-kicker">Exact Strategy Desk</div>
+<h2>Look Up a Decision</h2>
+<p>Enter the player cards and the community cards available at the decision. Optimal play is always shown first.</p>
+</section>
+<div class="lookup-street-tabs" id="lookupStreetTabs" aria-label="Decision street">
+<button class="lookup-street active" data-street="preflop" type="button">Preflop</button>
+<button class="lookup-street" data-street="flop" type="button">Flop</button>
+<button class="lookup-street" data-street="river" type="button">River</button>
+</div>
+<div class="lookup-hands">
+<section class="lookup-group">
+<div class="lookup-heading"><strong>Player</strong><small>Choose two hole cards</small></div>
+<div class="lookup-slots" id="lookupPlayerSlots"></div>
+</section>
+<section class="lookup-group" id="lookupBoardGroup">
+<div class="lookup-heading"><strong>Community</strong><small id="lookupBoardHelp">Choose the available board cards</small></div>
+<div class="lookup-slots" id="lookupBoardSlots"></div>
+</section>
+</div>
+<div class="picker-label lookup-picker-label" id="lookupPickerLabel">Choose a rank</div>
+<div class="rank-picker" id="lookupRankPicker"></div>
+<div class="suit-picker" id="lookupSuitPicker"></div>
+<div class="lookup-controls">
+<button class="secondary-button" id="lookupRemove" type="button">Remove selected card</button>
+<button class="secondary-button" id="lookupClear" type="button">Clear cards</button>
+</div>
+<p aria-live="polite" class="lookup-message" id="lookupMessage"></p>
+<div aria-live="polite" class="lookup-result hidden" id="lookupResult"></div>
+<div class="strategy-selector-row hidden" id="strategySelectorRow">
+<label for="lookupStrategy">Simplified strategy</label>
+<select id="lookupStrategy">
+<option value="jefe">El Jefe Strategy — Intermediate</option>
+<option value="wizard">Wizard of Odds Strategy — Beginner</option>
+</select>
+</div>
+<div class="lookup-strategy-result hidden" id="lookupStrategyResult"></div>
+<details class="strategy-chart-details" open>
+<summary>Exact Preflop Strategy Chart</summary>
+<div class="preflop-chart-legend">
+<span><i class="preflop-key key-always">4X</i> Raise suited or offsuit</span>
+<span><i class="preflop-key key-suited">4X S</i> Raise only when suited</span>
+<span><i class="preflop-key key-check">C</i> Check</span>
+</div>
+<div class="strategy-table-container" id="preflopChartContainer"></div>
+<p class="chart-note">The chart is exact preflop strategy. El Jefe and Wizard simplified strategies apply only after the flop.</p>
+</details>
+</section>
+
 <footer>
 <div class="footer-actions">
 <a class="footer-link" href="https://jliese916.github.io/"><img alt="" aria-hidden="true" src="./jefe-crest.svg"/>Return to Casa del Jefe</a>
-<div class="update-notice hidden" id="updateNotice" role="status" aria-live="polite">
-<span>A new version of Ultimate Texas Hold’em is ready.</span>
-<button class="update-button" id="reloadUpdate" type="button">Reload Now</button>
-</div>
+<div class="update-notice hidden" id="updateNotice" role="status" aria-live="polite"><span>A new version of Ultimate Texas Hold’em is ready.</span><button class="update-button" id="reloadUpdate" type="button">Reload Now</button></div>
 </div>
 </footer>
 </main>
-<script src="./poker-engine.js?v=1"></script>
-<script defer src="./app.js?v=6"></script>
+<script src="./poker-engine.js?v=7"></script>
+<script src="./strategy-data.js?v=7"></script>
+<script defer src="./app.js?v=7"></script>
 </body>
 </html>

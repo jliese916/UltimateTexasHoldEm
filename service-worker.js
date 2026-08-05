@@ -1,12 +1,13 @@
 "use strict";
 
-const BUILD_VERSION = "6";
-const CACHE = "casa-ultimate-holdem-v6";
+const BUILD_VERSION = "7";
+const CACHE = "casa-ultimate-holdem-v7";
 const ASSETS = [
   "./index.html",
-  "./styles.css?v=6",
-  "./poker-engine.js?v=1",
-  "./app.js?v=6",
+  "./styles.css?v=7",
+  "./poker-engine.js?v=7",
+  "./strategy-data.js?v=7",
+  "./app.js?v=7",
   "./manifest.webmanifest",
   "./jefe-crest.svg",
   "./favicon-64.png",
@@ -20,11 +21,7 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener("message", event => {
@@ -47,22 +44,11 @@ function cacheResponse(request, response, cacheKey = request) {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   if (event.request.mode === "navigate") {
-    event.respondWith(
-      caches.match("./index.html").then(cached => {
-        const network = fetch(event.request)
-          .then(response => cacheResponse(event.request, response, "./index.html"))
-          .catch(() => null);
-        return cached || network;
-      })
-    );
+    event.respondWith(caches.match("./index.html").then(cached => {
+      const network = fetch(event.request).then(response => cacheResponse(event.request, response, "./index.html")).catch(() => null);
+      return cached || network;
+    }));
     return;
   }
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then(response => cacheResponse(event.request, response))
-        .catch(() => cached);
-    })
-  );
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => cacheResponse(event.request, response)).catch(() => cached)));
 });
