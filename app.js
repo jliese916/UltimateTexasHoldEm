@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "11";
+  const APP_VERSION = "12";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -16,7 +16,6 @@
   const CHART_RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
   const ACTION_LABELS = {
     check: "Check",
-    raise3: "Raise 3x",
     raise4: "Raise 4x",
     raise2: "Raise 2x",
     call1: "Call 1x",
@@ -488,7 +487,6 @@
     if (disabled) return [];
     if (stage === "preflop") return [
       { action: "check", key: "C", label: "Check" },
-      { action: "raise3", key: "3", label: "Raise 3x" },
       { action: "raise4", key: "4", label: "Raise 4x" }
     ];
     if (stage === "flop") return [
@@ -768,7 +766,7 @@
       await resolveFold(round);
       return;
     }
-    const multipliers = { raise3: 3, raise4: 4, raise2: 2, call1: 1 };
+    const multipliers = { raise4: 4, raise2: 2, call1: 1 };
     await resolveShowdown(round, multipliers[action]);
   }
 
@@ -814,7 +812,7 @@
     if (!round) return { text: "Press Deal to begin.", tone: "neutral" };
     if (round.animating) return { text: round.revealText || "Revealing cards...", tone: "neutral" };
     if (!round.completed) {
-      if (round.stage === "preflop") return { text: "Choose Check, Raise 3x, or Raise 4x.", tone: "neutral" };
+      if (round.stage === "preflop") return { text: "Choose Check or Raise 4x.", tone: "neutral" };
       if (round.stage === "flop") return { text: "The flop is out. Choose Check or Raise 2x.", tone: "neutral" };
       if (round.stage === "river") return { text: "The board is complete. Call 1x or Fold.", tone: "neutral" };
     }
@@ -985,7 +983,7 @@
       el.trainFeedback.classList.toggle("correct", round.perfect);
     } else {
       const prompts = {
-        preflop: "Choose Check, Raise 3x, or Raise 4x.",
+        preflop: "Choose Check or Raise 4x.",
         flop: "Choose Check or Raise 2x.",
         river: "Choose Call 1x or Fold."
       };
@@ -1235,7 +1233,7 @@
     const rankValue = rank => ({ A:14, K:13, Q:12, J:11, T:10, 9:9, 8:8, 7:7, 6:6, 5:5, 4:4, 3:3, 2:2 })[rank];
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
-    headRow.innerHTML = `<th class="corner-cell"><span>High ↓</span><span>Low →</span></th>${columnRanks.map(rank => `<th>${rank}</th>`).join("")}`;
+    headRow.innerHTML = `<th class="corner-cell" aria-hidden="true"></th>${columnRanks.map(rank => `<th>${rank}</th>`).join("")}`;
     thead.append(headRow);
     const tbody = document.createElement("tbody");
     for (const rowRank of rowRanks) {
@@ -1382,7 +1380,7 @@
   }
 
   function challengePrompt(stage) {
-    if (stage === "preflop") return "Choose Check, Raise 3x, or Raise 4x.";
+    if (stage === "preflop") return "Choose Check or Raise 4x.";
     if (stage === "flop") return "Choose Check or Raise 2x.";
     return "Choose Call 1x or Fold.";
   }
@@ -1520,7 +1518,7 @@
     const target = event.target;
     if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
     const key = event.key.toUpperCase();
-    const shortcuts = { C: "check", "3": "raise3", "4": "raise4", "2": "raise2", F: "fold", "1": "call1" };
+    const shortcuts = { C: "check", "4": "raise4", "2": "raise2", F: "fold", "1": "call1" };
     if (state.mode === "play" && shortcuts[key]) {
       event.preventDefault();
       takePlayAction(shortcuts[key]);
@@ -1580,7 +1578,7 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForUpdate) window.location.reload();
     });
-    navigator.serviceWorker.register("./service-worker.js?v=10").then(registration => {
+    navigator.serviceWorker.register("./service-worker.js?v=12").then(registration => {
       const showWaiting = worker => {
         if (!worker || worker.state !== "installed" || !navigator.serviceWorker.controller) return;
         el.updateNotice.classList.remove("hidden");
