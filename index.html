@@ -11,7 +11,7 @@
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./favicon-64.png" rel="icon" type="image/png"/>
 <link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="./styles.css?v=13" rel="stylesheet"/>
+<link href="./styles.css?v=17" rel="stylesheet"/>
 </head>
 <body>
 <main class="app">
@@ -94,6 +94,14 @@
 <div aria-label="Train statistics" class="play-topline lir-topline train-topline">
 <div><small>Hands</small><strong id="trainHands">0</strong></div>
 <div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="trainAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="trainDecisionIndicator"></span></span></div>
+</div>
+<div class="train-strategy-selector">
+<label for="trainStrategy">Train against</label>
+<select id="trainStrategy">
+<option value="optimal">Optimal Play</option>
+<option value="jefe">El Jefe Strategy</option>
+<option value="wizard">Wizard of Odds Strategy</option>
+</select>
 </div>
 <div class="lir-zone community-zone uth-community-zone yellow-card-zone"><div class="zone-label light">Community</div><div class="hand five-card-hand" id="trainCommunity"></div></div>
 <div class="lir-zone player-zone uth-player-zone"><div class="zone-label light">Player</div><div class="hand two-card-hand" id="trainPlayer"></div></div>
@@ -181,7 +189,53 @@
 <details class="strategy-guide-details" id="riverStrategyDetails">
 <summary>River Strategies</summary>
 <div class="strategy-guide-body">
-<div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><p class="under-construction">Under construction. The best river play is still available through Look Up.</p></div>
+<div class="strategy-terms-card">
+<h3>River Strategy Terms</h3>
+<dl class="strategy-terms-list">
+<div><dt>One-card outs</dt><dd>The number of unseen individual cards that would give the dealer a stronger hand if that card were the dealer’s only hole card.</dd></div>
+<div><dt>A hole card contributes</dt><dd>Removing that hole card weakens your final best five-card hand, including its kicker.</dd></div>
+<div><dt>Higher and lower hole cards</dt><dd>Determined by rank.</dd></div>
+<div><dt>Dry board</dt><dd>No three board cards share a suit.</dd></div>
+<div><dt>Four-flush board</dt><dd>At least four board cards share a suit.</dd></div>
+<div><dt>Hidden pair of the higher card</dt><dd>You have exactly one pair because your higher hole-card rank appears on the board.</dd></div>
+<div><dt>Hidden pair of the lower card</dt><dd>You have exactly one pair because your lower hole-card rank appears on the board.</dd></div>
+</dl>
+</div>
+<div class="strategy-guide-card strategy-jefe river-strategy-card">
+<h3>El Jefe Strategy <span>Intermediate</span></h3>
+<p class="strategy-order-note">Count the one-card outs, then apply the first matching rule.</p>
+<section class="river-rule-section river-rule-global"><h4>Global Rules</h4><ul>
+<li><strong>18 or fewer outs:</strong> Call.</li>
+<li><strong>Board quads:</strong> Call through 28 outs when a hole card contributes your kicker.</li>
+<li><strong>Pocket deuces making two pair:</strong> Call through 23 outs when the deuces contribute to your final hand.</li>
+</ul></section>
+<section class="river-rule-section"><h4>Exactly 19 Outs</h4>
+<p><strong>First, fold if neither hole card contributes.</strong> Otherwise:</p><ul>
+<li><strong>Pocket deuces:</strong> Call when a deuce contributes.</li>
+<li><strong>9-high, T-high, or J-high starting hand:</strong> Call.</li>
+<li><strong>Q-high starting hand:</strong> Call, except fold when your final hand is only high card, only the queen contributes, and exactly three board cards share a suit.</li>
+<li><strong>K-high starting hand:</strong> Call only when your final hand is exactly one pair and only the king contributes.</li>
+</ul><p>Otherwise, fold.</p></section>
+<section class="river-rule-section"><h4>Exactly 20 Outs</h4>
+<h5>Starting hand is 8-high or stronger</h5><p>Call when at least one hole card contributes, except for the following trap.</p>
+<div class="strategy-trap"><strong>Weak Lower-Pair Trap — Fold when all five are true:</strong><ul>
+<li>Your starting hand is 8-high, 9-high, or T-high.</li>
+<li>Your final hand is exactly one pair.</li>
+<li>Your lower hole-card rank makes that pair.</li>
+<li>Both hole cards contribute, with the higher card playing as a kicker.</li>
+<li>Fewer than four board cards share a suit.</li>
+</ul></div>
+<h5>Starting hand is 7-high or weaker</h5><p>Call in any of these situations:</p><ul>
+<li>Your final hand is two pair and a hole card contributes.</li>
+<li>Your higher hole card makes the pair, and either the higher card is a six or seven or the board is dry.</li>
+<li>Your lower hole card makes the pair, only that lower card contributes, and the board is dry.</li>
+</ul><p>Otherwise, fold.</p></section>
+<section class="river-rule-section"><h4>Exactly 21 Outs</h4><p>Call in either situation:</p><ul>
+<li>Your final hand is exactly one pair, your higher hole card makes that pair, and the higher card is an eight or better.</li>
+<li>Your starting hand is 86 or 87; 95, 96, 97, or 98; T3 or higher; J3 or higher; Q3 or higher; or K3 or higher among the preflop-check hands.</li>
+</ul><p>Suitedness does not change these starting-hand groups. Otherwise, fold.</p></section>
+<section class="river-rule-section"><h4>More Than 21 Outs</h4><p>Fold unless one of the global exceptions applies: pocket deuces making two pair through 23 outs, or board quads with a contributing hole-card kicker through 28 outs.</p></section>
+</div>
 <div class="strategy-guide-card strategy-wizard"><h3>Wizard of Odds Strategy <span>Beginner</span></h3><ol>
 <li>Call 1x with a hidden pair or better.</li>
 <li>Otherwise call when fewer than 21 one-card dealer outs beat you.</li>
@@ -217,8 +271,8 @@
 </div>
 </footer>
 </main>
-<script src="./poker-engine.js?v=14"></script>
-<script src="./strategy-data.js?v=14"></script>
-<script defer src="./app.js?v=14"></script>
+<script src="./poker-engine.js?v=17"></script>
+<script src="./strategy-data.js?v=17"></script>
+<script defer src="./app.js?v=17"></script>
 </body>
 </html>

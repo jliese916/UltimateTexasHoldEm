@@ -2959,3 +2959,133 @@ footer{color:var(--casa-muted)}
   .certificate-corner{font-size:1.35rem}
   .approved-seal,.grand-master-seal{width:80px;height:80px}
 }
+
+
+/* v15 — river strategy and certification-result refinements */
+.strategy-terms-card{
+  padding:15px 16px;
+  border:1px solid rgba(201,162,58,.34);
+  border-radius:15px;
+  background:rgba(3,17,13,.5);
+  text-align:left;
+}
+.strategy-terms-card h3{margin:0 0 11px;color:var(--casa-gold-soft);font-family:Georgia,"Times New Roman",serif}
+.strategy-terms-list{display:grid;gap:9px;margin:0}
+.strategy-terms-list>div{display:grid;grid-template-columns:minmax(130px,.72fr) minmax(0,1.6fr);gap:10px;padding-bottom:8px;border-bottom:1px solid rgba(201,162,58,.14)}
+.strategy-terms-list>div:last-child{padding-bottom:0;border-bottom:0}
+.strategy-terms-list dt{color:var(--casa-cream);font-weight:900}
+.strategy-terms-list dd{margin:0;color:var(--casa-muted);line-height:1.45}
+.river-strategy-card{display:grid;gap:13px}
+.river-rule-section{padding:13px 14px;border:1px solid rgba(201,162,58,.24);border-radius:13px;background:rgba(255,255,255,.035);text-align:left}
+.river-rule-section h4{margin:0 0 8px;color:var(--casa-gold-soft);font-family:Georgia,"Times New Roman",serif;font-size:1.08rem}
+.river-rule-section h5{margin:12px 0 5px;color:var(--casa-cream);font-size:.92rem}
+.river-rule-section p{margin:7px 0!important;color:var(--casa-muted)!important}
+.river-rule-section ul{margin:7px 0 0;padding-left:20px}
+.river-rule-section li{margin:7px 0;color:var(--casa-cream);line-height:1.45}
+.river-rule-global{border-color:rgba(231,200,106,.5);background:linear-gradient(145deg,rgba(201,162,58,.12),rgba(255,255,255,.025))}
+.strategy-trap{margin:10px 0;padding:11px 12px;border-left:4px solid #d38b4a;border-radius:8px;background:rgba(211,139,74,.1);color:var(--casa-cream)}
+.strategy-trap ul{margin-bottom:0}
+
+.certificate-not-yet{
+  border-color:#8f8267;
+  background:
+    radial-gradient(circle at 50% 24%,rgba(255,255,255,.84),transparent 31%),
+    linear-gradient(145deg,#f7f1df,#ded4bb);
+  color:#453f33;
+  box-shadow:inset 0 0 0 2px rgba(80,70,50,.16),0 12px 25px rgba(0,0,0,.2);
+}
+.certificate-not-yet .certificate-small{color:#655e50}
+.certificate-not-yet .certificate-title{color:#514b40;font-size:clamp(2rem,9vw,3.05rem);letter-spacing:.045em}
+.certificate-not-yet .certificate-rule{background:linear-gradient(90deg,transparent,#81745c,transparent)}
+.certificate-not-yet p{color:#514b40}
+.certificate-not-yet .certificate-score{border-color:#8f8267;background:rgba(255,255,255,.5);color:#3f392f}
+.certificate-not-yet .certificate-signature{border-color:#756b57;color:#514b40}
+.certificate-not-yet .certificate-signature-label{color:#6b6252}
+.not-yet-seal{
+  display:grid;
+  place-items:center;
+  width:94px;
+  height:94px;
+  margin:14px auto 8px;
+  border:3px double #81745c;
+  border-radius:50%;
+  background:rgba(255,255,255,.34);
+  color:#5c5445;
+  transform:rotate(-4deg);
+}
+.not-yet-seal span{font-size:2rem;line-height:1}
+.not-yet-seal small{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:.55rem;font-weight:950;letter-spacing:.08em}
+.certificate-next-step{
+  margin:23px -22px -24px;
+  padding:11px 15px;
+  background:#514b40;
+  color:#f8f1df;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:.78rem;
+  font-weight:850;
+  letter-spacing:.025em;
+}
+@media(max-width:520px){
+  .strategy-terms-list>div{grid-template-columns:1fr;gap:3px}
+  .certificate-next-step{margin-inline:-15px}
+}
+
+
+/* Ultimate Hold'em Parlor v16: selectable Train strategy */
+.train-strategy-selector{
+  display:grid;
+  grid-template-columns:auto minmax(190px,300px);
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:2px auto 13px;
+  padding:0 12px;
+}
+.train-strategy-selector label{
+  color:var(--casa-gold-soft);
+  font-size:.76rem;
+  font-weight:900;
+  letter-spacing:.065em;
+  text-transform:uppercase;
+}
+.train-strategy-selector select{
+  width:100%;
+  min-height:40px;
+  padding:7px 34px 7px 11px;
+  border:1px solid rgba(216,181,100,.52);
+  border-radius:10px;
+  background:#102a21;
+  color:var(--casa-cream);
+  font:inherit;
+  font-size:.88rem;
+  font-weight:850;
+  cursor:pointer;
+}
+.train-strategy-selector select:focus-visible{
+  outline:3px solid rgba(229,199,119,.35);
+  outline-offset:2px;
+}
+.train-strategy-selector select:disabled{
+  cursor:not-allowed;
+  opacity:.7;
+}
+@media(max-width:520px){
+  .train-strategy-selector{
+    grid-template-columns:1fr;
+    gap:5px;
+    margin-bottom:11px;
+    text-align:left;
+  }
+}
+
+
+/* v17: strategy-linked training feedback */
+.strategy-rule-failure{display:grid;gap:4px;margin-top:10px;padding:10px 11px;border:1px solid #e4cfa4;border-left:4px solid #b1842b;border-radius:11px;background:linear-gradient(135deg,#fffaf0,#fff);color:#29372f;line-height:1.4}
+.strategy-rule-failure>small{color:#8a5b16;font-size:.66rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.strategy-rule-path{color:#68766e;font-size:.72rem;font-weight:800}
+.strategy-rule-failure>strong{color:#173f2e;font-size:.9rem}
+.strategy-rule-failure>p{margin:0;color:#4c5d53;font-size:.82rem;line-height:1.45}
+.decision-recap-row.incorrect .strategy-rule-failure{grid-column:1/-1;margin-top:8px}
+.mistake-card .strategy-rule-failure{margin-top:12px}
+@media(max-width:430px){.strategy-rule-failure{padding:9px}.strategy-rule-path{font-size:.68rem}.strategy-rule-failure>p{font-size:.78rem}}
+.strategy-rule-failure .strategy-rule-path{color:#52655a}

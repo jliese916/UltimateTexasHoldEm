@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "14";
+  const APP_VERSION = "17";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -10,7 +10,8 @@
   const $ = selector => document.querySelector(selector);
   const $$ = selector => [...document.querySelectorAll(selector)];
   const PLAY_STORAGE_KEY = "casaUltimateHoldemPlayV2";
-  const TRAIN_STORAGE_KEY = "casaUltimateHoldemTrainV1";
+  const TRAIN_STORAGE_KEY = "casaUltimateHoldemTrainV2";
+  const LEGACY_TRAIN_STORAGE_KEY = "casaUltimateHoldemTrainV1";
   const SUIT_CLASSES = ["suit-hearts", "suit-diamonds", "suit-clubs", "suit-spades"];
   const RANK_CHARS = { 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T", 9: "9", 8: "8", 7: "7", 6: "6", 5: "5", 4: "4", 3: "3", 2: "2" };
   const CHART_RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
@@ -22,6 +23,11 @@
     fold: "Fold"
   };
   const STREET_LABELS = { preflop: "Preflop", flop: "Flop", river: "River" };
+  const TRAIN_STRATEGIES = Object.freeze({
+    optimal: { label: "Optimal Play", recapLabel: "Optimal" },
+    jefe: { label: "El Jefe Strategy", recapLabel: "El Jefe" },
+    wizard: { label: "Wizard of Odds Strategy", recapLabel: "Wizard of Odds" }
+  });
   const WINDOW_PAUSE = 78;
   const DEAL_SLIDE_DURATION = 175;
   const DEAL_SETTLE_DELAY = 18;
@@ -58,6 +64,7 @@
     playMistakeList: $("#playMistakeList"),
     resetPlay: $("#resetPlay"),
 
+    trainStrategy: $("#trainStrategy"),
     trainHands: $("#trainHands"),
     trainAccuracy: $("#trainAccuracy"),
     trainDecisionIndicator: $("#trainDecisionIndicator"),
@@ -129,8 +136,39 @@
     return { balance: 0, hands: 0, perfectHands: 0, wins: 0, pushes: 0, losses: 0, history: [0], mistakes: [], round: null };
   }
 
+  function emptyTrainSession() {
+    return { hands: 0, perfectHands: 0, errors: { preflop: 0, flop: 0, river: 0 }, mistakes: [] };
+  }
+
   function emptyTrain() {
-    return { hands: 0, perfectHands: 0, errors: { preflop: 0, flop: 0, river: 0 }, mistakes: [], round: null };
+    return {
+      strategy: "optimal",
+      sessions: {
+        optimal: emptyTrainSession(),
+        jefe: emptyTrainSession(),
+        wizard: emptyTrainSession()
+      },
+      round: null
+    };
+  }
+
+  function normalizeTrainSession(saved) {
+    const base = emptyTrainSession();
+    if (!saved || typeof saved !== "object") return base;
+    return {
+      hands: Number(saved.hands) || 0,
+      perfectHands: Number(saved.perfectHands) || 0,
+      errors: {
+        preflop: Number(saved.errors && saved.errors.preflop) || 0,
+        flop: Number(saved.errors && saved.errors.flop) || 0,
+        river: Number(saved.errors && saved.errors.river) || 0
+      },
+      mistakes: Array.isArray(saved.mistakes) ? saved.mistakes.slice(-25) : []
+    };
+  }
+
+  function trainSession(strategy = state.train.strategy) {
+    return state.train.sessions[strategy] || state.train.sessions.optimal;
   }
 
   function loadPlay() {
@@ -157,18 +195,22 @@
   function loadTrain() {
     try {
       const saved = JSON.parse(localStorage.getItem(TRAIN_STORAGE_KEY) || "null");
-      if (!saved || typeof saved !== "object") return emptyTrain();
-      return {
-        ...emptyTrain(),
-        hands: Number(saved.hands) || 0,
-        perfectHands: Number(saved.perfectHands) || 0,
-        errors: {
-          preflop: Number(saved.errors && saved.errors.preflop) || 0,
-          flop: Number(saved.errors && saved.errors.flop) || 0,
-          river: Number(saved.errors && saved.errors.river) || 0
-        },
-        mistakes: Array.isArray(saved.mistakes) ? saved.mistakes.slice(-25) : []
-      };
+      if (saved && typeof saved === "object" && saved.sessions) {
+        const strategy = Object.prototype.hasOwnProperty.call(TRAIN_STRATEGIES, saved.strategy) ? saved.strategy : "optimal";
+        return {
+          strategy,
+          sessions: {
+            optimal: normalizeTrainSession(saved.sessions.optimal),
+            jefe: normalizeTrainSession(saved.sessions.jefe),
+            wizard: normalizeTrainSession(saved.sessions.wizard)
+          },
+          round: null
+        };
+      }
+      const legacy = JSON.parse(localStorage.getItem(LEGACY_TRAIN_STORAGE_KEY) || "null");
+      const migrated = emptyTrain();
+      if (legacy && typeof legacy === "object") migrated.sessions.optimal = normalizeTrainSession(legacy);
+      return migrated;
     } catch (error) {
       console.warn("Could not load Ultimate Hold'em training session.", error);
       return emptyTrain();
@@ -195,11 +237,14 @@
   function saveTrain() {
     try {
       localStorage.setItem(TRAIN_STORAGE_KEY, JSON.stringify({
-        hands: state.train.hands,
-        perfectHands: state.train.perfectHands,
-        errors: state.train.errors,
-        mistakes: state.train.mistakes.slice(-25)
+        strategy: state.train.strategy,
+        sessions: {
+          optimal: trainSession("optimal"),
+          jefe: trainSession("jefe"),
+          wizard: trainSession("wizard")
+        }
       }));
+      localStorage.removeItem(LEGACY_TRAIN_STORAGE_KEY);
     } catch (error) {
       console.warn("Could not save Ultimate Hold'em training session.", error);
     }
@@ -476,11 +521,290 @@
     return { action: "fold", rule: `Fold because ${outs.beats} dealer outs beat you and you do not have a hidden pair or better.`, outs };
   }
 
+
+  function holeContributionInfo(playerCards, board, evaluation = E.evaluateSeven([...playerCards, ...board])) {
+    const withoutFirst = E.evaluateBest([playerCards[1], ...board]);
+    const withoutSecond = E.evaluateBest([playerCards[0], ...board]);
+    const contributes = [
+      E.compareScore(evaluation.score, withoutFirst.score) > 0,
+      E.compareScore(evaluation.score, withoutSecond.score) > 0
+    ];
+    const highIndex = playerCards[0].rank >= playerCards[1].rank ? 0 : 1;
+    const lowIndex = highIndex === 0 ? 1 : 0;
+    const highRank = playerCards[highIndex].rank;
+    const lowRank = playerCards[lowIndex].rank;
+    const pocket = highRank === lowRank;
+    const highContributes = contributes[highIndex];
+    const lowContributes = contributes[lowIndex];
+    const pairRank = evaluation.category === 1 ? evaluation.score[1] : 0;
+    return {
+      contributes,
+      any: contributes.some(Boolean),
+      neither: !contributes.some(Boolean),
+      both: contributes.every(Boolean),
+      highIndex,
+      lowIndex,
+      highRank,
+      lowRank,
+      pocket,
+      highContributes,
+      lowContributes,
+      onlyHigh: highContributes && !lowContributes,
+      onlyLow: lowContributes && !highContributes,
+      higherMakesPair: !pocket && evaluation.category === 1 && pairRank === highRank && board.some(card => card.rank === highRank),
+      lowerMakesPair: !pocket && evaluation.category === 1 && pairRank === lowRank && board.some(card => card.rank === lowRank)
+    };
+  }
+
+  function maximumSuitCount(cards) {
+    return Math.max(...suitCounts(cards));
+  }
+
+  function boardHasQuads(board) {
+    return rankCounts(board).some(count => count === 4);
+  }
+
+  function qualifiesTwentyOneStartingHand(playerCards) {
+    const high = Math.max(playerCards[0].rank, playerCards[1].rank);
+    const low = Math.min(playerCards[0].rank, playerCards[1].rank);
+    if (high === low) return false;
+    if (high === 8) return low === 6 || low === 7;
+    if (high === 9) return low >= 5 && low <= 8;
+    if (high === 10) return low >= 3 && low <= 9;
+    if (high === 11) return low >= 3 && low <= 10;
+    if (high === 12) return low >= 3 && low <= 11;
+    if (high === 13) return low >= 3 && low <= 12 && preflopDecision(playerCards).action === "check";
+    return false;
+  }
+
+  function elJefeRiverDecision(playerCards, board) {
+    const evaluation = E.evaluateSeven([...playerCards, ...board]);
+    const outs = oneCardOuts(playerCards, board);
+    const count = outs.beats;
+    const contribution = holeContributionInfo(playerCards, board, evaluation);
+    const boardSuitCount = maximumSuitCount(board);
+    const dryBoard = boardSuitCount < 3;
+    const pocketDeuces = contribution.pocket && contribution.highRank === 2;
+    const pocketDeucesTwoPair = pocketDeuces && evaluation.category === 2 && contribution.any;
+    const boardQuadsKicker = boardHasQuads(board) && evaluation.category === 7 && contribution.any;
+    const startingHigh = contribution.highRank;
+
+    const decision = (action, rule) => ({
+      action,
+      rule,
+      outs,
+      evaluation,
+      contribution,
+      boardSuitCount,
+      dryBoard
+    });
+
+    if (count <= 18) return decision("call1", `Call with ${count} one-card outs.`);
+    if (boardQuadsKicker && count <= 28) return decision("call1", `Call through 28 outs because the board is four of a kind and a hole card supplies your playing kicker.`);
+    if (pocketDeucesTwoPair && count <= 23) return decision("call1", `Call through 23 outs because pocket deuces make two pair and contribute to your final hand.`);
+
+    if (count === 19) {
+      if (contribution.neither) return decision("fold", "Fold at 19 outs because neither hole card contributes to your final hand.");
+      if (pocketDeuces && contribution.any) return decision("call1", "Call at 19 outs because a pocket deuce contributes to your final hand.");
+      if ([9, 10, 11].includes(startingHigh)) return decision("call1", `Call at 19 outs with a ${E.RANK_LABELS[startingHigh]}-high starting hand when a hole card contributes.`);
+      if (startingHigh === 12) {
+        const queenTrap = evaluation.category === 0 && contribution.onlyHigh && boardSuitCount === 3;
+        return queenTrap
+          ? decision("fold", "Fold the 19-out queen-high trap: your final hand is high card, only the queen contributes, and exactly three board cards share a suit.")
+          : decision("call1", "Call at 19 outs with a queen-high starting hand when a hole card contributes.");
+      }
+      if (startingHigh === 13 && evaluation.category === 1 && contribution.onlyHigh) {
+        return decision("call1", "Call at 19 outs because the final hand is one pair and only the king contributes.");
+      }
+      return decision("fold", "Fold at 19 outs because no El Jefe call rule applies.");
+    }
+
+    if (count === 20) {
+      if (startingHigh >= 8) {
+        if (contribution.neither) return decision("fold", "Fold at 20 outs because neither hole card contributes.");
+        const lowerPairTrap = [8, 9, 10].includes(startingHigh)
+          && evaluation.category === 1
+          && contribution.lowerMakesPair
+          && contribution.both
+          && boardSuitCount < 4;
+        if (lowerPairTrap) return decision("fold", "Fold the weak lower-pair trap: the lower hole card makes the pair, the higher card is only a kicker, and the board is not a four-flush.");
+        return decision("call1", `Call at 20 outs with a ${E.RANK_LABELS[startingHigh]}-high or stronger starting hand because a hole card contributes.`);
+      }
+
+      if (evaluation.category === 2 && contribution.any) {
+        return decision("call1", "Call at 20 outs because the final hand is two pair and a hole card contributes.");
+      }
+      if (contribution.higherMakesPair && (startingHigh === 6 || startingHigh === 7 || dryBoard)) {
+        return decision("call1", `Call at 20 outs because the higher hole card makes the pair${startingHigh === 6 || startingHigh === 7 ? " and is a six or seven" : " on a dry board"}.`);
+      }
+      if (contribution.lowerMakesPair && contribution.onlyLow && dryBoard) {
+        return decision("call1", "Call at 20 outs because only the lower hole card makes the pair and the board is dry.");
+      }
+      return decision("fold", "Fold at 20 outs because no El Jefe call rule applies.");
+    }
+
+    if (count === 21) {
+      if (evaluation.category === 1 && contribution.higherMakesPair && startingHigh >= 8) {
+        return decision("call1", `Call at 21 outs because the higher hole card makes the pair and is ${E.RANK_LABELS[startingHigh]} or better.`);
+      }
+      if (qualifiesTwentyOneStartingHand(playerCards)) {
+        return decision("call1", `Call at 21 outs because ${startingHandClass(playerCards)} belongs to the qualifying starting-hand groups.`);
+      }
+      return decision("fold", "Fold at 21 outs because no El Jefe call rule applies.");
+    }
+
+    return decision("fold", `Fold with ${count} one-card outs because neither global exception applies.`);
+  }
+
   function optimalForStage(stage, playerCards, board) {
     if (stage === "preflop") return preflopDecision(playerCards);
     if (stage === "flop") return exactFlopDecision(playerCards, board.slice(0, 3));
     if (stage === "river") return exactRiverDecision(playerCards, board.slice(0, 5));
     throw new Error(`Unknown stage ${stage}.`);
+  }
+
+  function normalizeStrategyDecision(result) {
+    return {
+      ...result,
+      acceptableActions: Array.isArray(result.acceptableActions) ? result.acceptableActions.slice() : [result.action]
+    };
+  }
+
+  function decisionForStrategy(strategy, stage, playerCards, board) {
+    // All three training choices share the same preflop chart.
+    if (stage === "preflop") return preflopDecision(playerCards);
+    if (strategy === "optimal") return optimalForStage(stage, playerCards, board);
+    if (strategy === "jefe") {
+      if (stage === "flop") return normalizeStrategyDecision(elJefeFlopDecision(playerCards, board.slice(0, 3)));
+      if (stage === "river") return normalizeStrategyDecision(elJefeRiverDecision(playerCards, board.slice(0, 5)));
+    }
+    if (strategy === "wizard") {
+      if (stage === "flop") return normalizeStrategyDecision(wizardFlopDecision(playerCards, board.slice(0, 3)));
+      if (stage === "river") return normalizeStrategyDecision(wizardRiverDecision(playerCards, board.slice(0, 5)));
+    }
+    throw new Error(`Unknown training strategy ${strategy} at ${stage}.`);
+  }
+
+
+  function elJefeFlopRuleTitle(rule) {
+    if (rule.includes("pocket deuces")) return "2. Pocket deuces";
+    if (rule.includes("hidden pair")) return "3. Hidden pair";
+    if (rule.includes("four-card flush") || rule.includes("offsuit Tx")) return "4. Strong four-card flush";
+    if (rule.includes("T9 or J9")) return "5. T9 or J9 straight draws";
+    if (rule.includes("96s, 97s, or 98s")) return "6. Small suited hands";
+    if (rule.includes("ace-containing paired flop")) return "7. Small offsuit kings on an ace-containing paired flop";
+    if (rule.includes("three-of-a-kind flop")) return "8. Small offsuit kings on a three-of-a-kind flop";
+    if (rule.startsWith("Raise with") && rule.includes("or better")) return "1. Straight or better";
+    return "9. Everything else";
+  }
+
+  function wizardFlopRuleTitle(rule) {
+    if (rule.includes("two pair") || (rule.startsWith("Raise with") && rule.includes("or better"))) return "1. Two pair or better";
+    if (rule.includes("hidden pair")) return "2. Hidden pair";
+    if (rule.includes("four-card flush")) return "3. Four-card flush";
+    return "4. Otherwise check";
+  }
+
+  function elJefeRiverRuleTitle(result) {
+    const rule = result.rule || "";
+    const count = result.outs ? result.outs.beats : null;
+    if (rule.includes("through 28 outs")) return "Global Rules · Board quads";
+    if (rule.includes("through 23 outs")) return "Global Rules · Pocket deuces making two pair";
+    if (count !== null && count <= 18) return "Global Rules · 18 or fewer outs";
+    if (count === 19) {
+      if (rule.includes("neither hole card")) return "Exactly 19 Outs · Neither hole card contributes";
+      if (rule.includes("pocket deuce")) return "Exactly 19 Outs · Pocket deuces";
+      if (rule.includes("9-high") || rule.includes("T-high") || rule.includes("J-high")) return "Exactly 19 Outs · 9-high, T-high, or J-high";
+      if (rule.includes("queen-high") || rule.includes("queen")) return "Exactly 19 Outs · Q-high starting hand";
+      if (rule.includes("king")) return "Exactly 19 Outs · K-high starting hand";
+      return "Exactly 19 Outs · Otherwise fold";
+    }
+    if (count === 20) {
+      if (rule.includes("weak lower-pair trap")) return "Exactly 20 Outs · Weak Lower-Pair Trap";
+      if (rule.includes("two pair")) return "Exactly 20 Outs · Two pair with a contributing hole card";
+      if (rule.includes("higher hole card makes the pair")) return "Exactly 20 Outs · Higher hole card makes the pair";
+      if (rule.includes("lower hole card makes the pair")) return "Exactly 20 Outs · Lower hole card makes the pair";
+      if (rule.includes("8-high") || rule.includes("stronger starting hand") || rule.includes("neither hole card")) return "Exactly 20 Outs · Starting hand is 8-high or stronger";
+      return "Exactly 20 Outs · Otherwise fold";
+    }
+    if (count === 21) {
+      if (rule.includes("higher hole card makes the pair")) return "Exactly 21 Outs · Higher hidden pair";
+      if (rule.includes("qualifying starting-hand groups")) return "Exactly 21 Outs · Qualifying starting hand";
+      return "Exactly 21 Outs · Otherwise fold";
+    }
+    return "More Than 21 Outs · Global exceptions only";
+  }
+
+  function wizardRiverRuleTitle(result) {
+    const rule = result.rule || "";
+    if (rule.includes("hidden pair") || rule.includes("or better")) return "1. Hidden pair or better";
+    if (rule.includes("fewer than 21")) return "2. Fewer than 21 one-card outs";
+    return "3. Otherwise fold";
+  }
+
+  function decisionRuleReference(strategy, stage, expected, playerCards) {
+    const label = TRAIN_STRATEGIES[strategy] || TRAIN_STRATEGIES.optimal;
+    if (stage === "preflop") {
+      const classLabel = expected.classLabel || startingHandClass(playerCards);
+      return {
+        path: "Look Up → Optimal Preflop Play",
+        title: `${classLabel} chart entry`,
+        explanation: `The preflop chart calls for ${actionNames(expected.acceptableActions)} with ${classLabel}.`
+      };
+    }
+
+    if (strategy === "jefe" && stage === "flop") {
+      return {
+        path: "Look Up → Flop Strategies → El Jefe Strategy",
+        title: elJefeFlopRuleTitle(expected.rule || ""),
+        explanation: expected.rule
+      };
+    }
+    if (strategy === "wizard" && stage === "flop") {
+      return {
+        path: "Look Up → Flop Strategies → Wizard of Odds Strategy",
+        title: wizardFlopRuleTitle(expected.rule || ""),
+        explanation: expected.rule
+      };
+    }
+    if (strategy === "jefe" && stage === "river") {
+      return {
+        path: "Look Up → River Strategies → El Jefe Strategy",
+        title: elJefeRiverRuleTitle(expected),
+        explanation: expected.rule
+      };
+    }
+    if (strategy === "wizard" && stage === "river") {
+      return {
+        path: "Look Up → River Strategies → Wizard of Odds Strategy",
+        title: wizardRiverRuleTitle(expected),
+        explanation: expected.rule
+      };
+    }
+
+    if (stage === "flop") {
+      if (expected.exception) {
+        return {
+          path: "Look Up → Post-flop decision",
+          title: "Best-play exception",
+          explanation: `This exact flop is an exception to the simplified El Jefe rule. The best play is ${actionNames(expected.acceptableActions)}.`
+        };
+      }
+      const simplified = expected.simplified;
+      return {
+        path: "Look Up → Post-flop decision",
+        title: simplified ? `Best play · ${elJefeFlopRuleTitle(simplified.rule || "")}` : "Best flop play",
+        explanation: simplified && simplified.rule ? simplified.rule : `The best play is ${actionNames(expected.acceptableActions)}.`
+      };
+    }
+
+    const callEV = Number.isFinite(expected.callEV) ? formatUnits(expected.callEV) : "the calculated call value";
+    const foldEV = Number.isFinite(expected.foldEV) ? formatUnits(expected.foldEV) : "−2 units";
+    return {
+      path: "Look Up → River decision",
+      title: "Best river play",
+      explanation: `Calling is worth ${callEV}; folding is worth ${foldEV}. The best play is ${actionNames(expected.acceptableActions)}.`
+    };
   }
 
   function availableActions(stage, disabled = false) {
@@ -500,20 +824,27 @@
     return [];
   }
 
-  function gradeDecision(round, action) {
+  function gradeDecision(round, action, strategy = "optimal") {
     if (!round.scoringActive) return null;
-    const optimal = optimalForStage(round.stage, round.playerCards, round.board);
-    if (!optimal.acceptableActions.includes(action)) {
+    const rawExpected = decisionForStrategy(strategy, round.stage, round.playerCards, round.board);
+    const expected = {
+      ...rawExpected,
+      reference: decisionRuleReference(strategy, round.stage, rawExpected, round.playerCards)
+    };
+    if (!expected.acceptableActions.includes(action)) {
       round.perfect = false;
       round.scoringActive = false;
       round.firstMistake = {
         stage: round.stage,
         chosen: action,
-        optimal: optimal.action,
-        acceptable: optimal.acceptableActions.slice()
+        optimal: expected.action,
+        acceptable: expected.acceptableActions.slice(),
+        strategy,
+        rule: expected.rule || "",
+        reference: { ...expected.reference }
       };
     }
-    return optimal;
+    return expected;
   }
 
   function mistakeText(mistake) {
@@ -538,7 +869,10 @@
       optimal: mistake.optimal,
       acceptable: mistake.acceptable.slice(),
       playerCards: round.playerCards.map(copyCard),
-      board: round.board.slice(0, visibleBoard).map(copyCard)
+      board: round.board.slice(0, visibleBoard).map(copyCard),
+      strategy: mistake.strategy || round.trainingStrategy || "optimal",
+      rule: mistake.rule || "",
+      reference: mistake.reference ? { ...mistake.reference } : null
     };
   }
 
@@ -551,7 +885,12 @@
     return actions.map(action => ACTION_LABELS[action]).join(" or ");
   }
 
-  function renderMistakeList(mistakes, summaryNode, listNode) {
+  function ruleFailureMarkup(reference, heading = "Why this missed the strategy") {
+    if (!reference) return "";
+    return `<div class="strategy-rule-failure"><small>${heading}</small><span class="strategy-rule-path">${reference.path}</span><strong>${reference.title}</strong><p>${reference.explanation}</p></div>`;
+  }
+
+  function renderMistakeList(mistakes, summaryNode, listNode, expectedLabel = "Optimal play") {
     summaryNode.textContent = `Review mistakes (${mistakes.length})`;
     if (!mistakes.length) {
       listNode.innerHTML = `<p class="mistake-empty">No mistakes in this session.</p>`;
@@ -561,7 +900,7 @@
       const board = mistake.board.length
         ? `<div class="mistake-card-group"><small>Board</small><div class="mistake-mini-hand">${mistake.board.map(miniCardMarkup).join("")}</div></div>`
         : "";
-      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>Optimal play</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div></article>`;
+      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>${expectedLabel}</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div>${ruleFailureMarkup(mistake.reference)}</article>`;
     }).join("");
   }
 
@@ -574,12 +913,14 @@
   }
 
   function trainDecisionRecap(round) {
+    const strategy = TRAIN_STRATEGIES[round.trainingStrategy] || TRAIN_STRATEGIES.optimal;
     const rows = round.decisions.map(decision => {
       const correct = decision.acceptable.includes(decision.chosen);
       const chosen = correct ? "" : `<small>Your play: ${ACTION_LABELS[decision.chosen]}</small>`;
-      return `<div class="decision-recap-row ${correct ? "correct" : "incorrect"}"><span class="decision-recap-mark">${correct ? "+" : "−"}</span><div><strong>${STREET_LABELS[decision.stage]}</strong><span>Optimal: ${actionNames(decision.acceptable)}</span>${chosen}</div></div>`;
+      const ruleFailure = correct ? "" : ruleFailureMarkup(decision.reference);
+      return `<div class="decision-recap-row ${correct ? "correct" : "incorrect"}"><span class="decision-recap-mark">${correct ? "+" : "−"}</span><div><strong>${STREET_LABELS[decision.stage]}</strong><span>${strategy.recapLabel}: ${actionNames(decision.acceptable)}</span>${chosen}${ruleFailure}</div></div>`;
     }).join("");
-    return `<div class="decision-recap"><div class="decision-recap-title">Correct play by street</div>${rows}</div>`;
+    return `<div class="decision-recap"><div class="decision-recap-title">Correct play by street · ${strategy.label}</div>${rows}</div>`;
   }
 
   function newPlayRound() {
@@ -883,7 +1224,7 @@
     renderPlayChrome(round);
   }
 
-  function newTrainRound() {
+  function newTrainRound(strategy = state.train.strategy) {
     const deck = E.shuffledDeck();
     return {
       playerCards: deck.slice(0, 2),
@@ -895,7 +1236,8 @@
       scoringActive: true,
       firstMistake: null,
       lastOptimal: null,
-      decisions: []
+      decisions: [],
+      trainingStrategy: strategy
     };
   }
 
@@ -908,12 +1250,13 @@
   function completeTrainHand(round) {
     if (round.counted) return;
     round.counted = true;
-    state.train.hands += 1;
-    if (round.perfect) state.train.perfectHands += 1;
+    const session = trainSession(round.trainingStrategy);
+    session.hands += 1;
+    if (round.perfect) session.perfectHands += 1;
     else if (round.firstMistake) {
-      state.train.errors[round.firstMistake.stage] += 1;
-      state.train.mistakes.push(mistakeSnapshot(round, state.train.hands));
-      if (state.train.mistakes.length > 25) state.train.mistakes.shift();
+      session.errors[round.firstMistake.stage] += 1;
+      session.mistakes.push(mistakeSnapshot(round, session.hands));
+      if (session.mistakes.length > 25) session.mistakes.shift();
     }
     saveTrain();
   }
@@ -922,9 +1265,9 @@
     const round = state.train.round;
     if (!round || round.completed) return;
     if (!availableActions(round.stage).some(item => item.action === action)) return;
-    const optimal = gradeDecision(round, action);
-    round.lastOptimal = optimal;
-    round.decisions.push({ stage: round.stage, chosen: action, optimal: optimal.action, acceptable: optimal.acceptableActions.slice() });
+    const expected = gradeDecision(round, action, round.trainingStrategy);
+    round.lastOptimal = expected;
+    round.decisions.push({ stage: round.stage, chosen: action, optimal: expected.action, acceptable: expected.acceptableActions.slice(), rule: expected.rule || "", reference: expected.reference ? { ...expected.reference } : null });
     if (round.firstMistake) {
       round.completed = true;
       completeTrainHand(round);
@@ -961,15 +1304,18 @@
   }
 
   function renderTrain() {
-    const t = state.train;
-    const round = t.round;
+    const t = trainSession();
+    const round = state.train.round;
+    const strategy = TRAIN_STRATEGIES[state.train.strategy];
     renderCommunityRow(el.trainCommunity, round, true);
     renderCardRow(el.trainPlayer, round && round.playerCards, round ? 2 : 0, 2);
     renderTrainActions(round);
+    el.trainStrategy.value = state.train.strategy;
+    el.trainStrategy.disabled = Boolean(round && !round.completed);
     el.trainHands.textContent = String(t.hands);
     el.trainAccuracy.textContent = formatPercent(t.perfectHands, t.hands);
     setDecisionIndicator(el.trainDecisionIndicator, round && round.completed ? round : null);
-    renderMistakeList(t.mistakes, el.trainMistakeSummary, el.trainMistakeList);
+    renderMistakeList(t.mistakes, el.trainMistakeSummary, el.trainMistakeList, `${strategy.recapLabel} play`);
     el.trainDeal.disabled = Boolean(round && !round.completed);
     el.trainDeal.textContent = round && round.completed ? "Deal Next" : "Deal";
     el.trainFeedback.classList.remove("correct");
@@ -977,7 +1323,7 @@
       el.trainMessage.textContent = "Press Deal to begin.";
       el.trainFeedback.classList.add("hidden");
     } else if (round.completed) {
-      el.trainMessage.textContent = round.perfect ? "Hand played perfectly." : "Hand complete.";
+      el.trainMessage.textContent = round.perfect ? `Hand played correctly against ${strategy.label}.` : `First mistake against ${strategy.label} is explained below.`;
       el.trainFeedback.innerHTML = trainDecisionRecap(round);
       el.trainFeedback.classList.remove("hidden");
       el.trainFeedback.classList.toggle("correct", round.perfect);
@@ -1194,8 +1540,9 @@
       cards.push(strategyLookupCard("El Jefe Strategy — Intermediate", jefe, optimal, `Cuts the Wizard strategy’s post-flop decision cost by ${D.flopPenaltyReductionPercent.toFixed(2)}% in our analysis.`));
       cards.push(strategyLookupCard("Wizard of Odds Strategy — Beginner", wizard, optimal, "The simpler published basic strategy."));
     } else {
-      cards.push(`<article class="lookup-strategy-card"><div class="strategy-result-heading"><strong>El Jefe Strategy — Intermediate</strong><span class="development-pill">Under construction</span></div><p>The intermediate river strategy is still being developed. The best play is shown above.</p></article>`);
+      const jefe = elJefeRiverDecision(playerCards, board);
       const wizard = wizardRiverDecision(playerCards, board);
+      cards.push(strategyLookupCard("El Jefe Strategy — Intermediate", jefe, optimal, `One-card dealer outs that beat you: ${jefe.outs.beats}.`));
       cards.push(strategyLookupCard("Wizard of Odds Strategy — Beginner", wizard, optimal, `One-card dealer outs that beat you: ${wizard.outs.beats} of ${wizard.outs.total}.`));
     }
     el.lookupStrategyResults.innerHTML = cards.join("");
@@ -1375,7 +1722,7 @@
       finishChallenge();
       return;
     }
-    challenge.round = newTrainRound();
+    challenge.round = newTrainRound("optimal");
     renderChallenge();
   }
 
@@ -1426,7 +1773,9 @@
         stage: round.stage,
         chosen: action,
         optimal: optimal.action,
-        acceptable: optimal.acceptableActions.slice()
+        acceptable: optimal.acceptableActions.slice(),
+        rule: optimal.rule || "",
+        reference: optimal.reference ? { ...optimal.reference } : null
       });
     }
 
@@ -1446,7 +1795,7 @@
     if (!misses.length) return "";
     return `<details class="mistake-review challenge-mistake-review"><summary>Review mistakes (${misses.length})</summary><div class="mistake-list">${misses.slice().reverse().map(mistake => {
       const board = mistake.board.length ? `<div class="mistake-card-group"><small>Board</small><div class="mistake-mini-hand">${mistake.board.map(miniCardMarkup).join("")}</div></div>` : "";
-      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>Optimal play</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div></article>`;
+      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>Optimal play</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div>${ruleFailureMarkup(mistake.reference, "Why this missed optimal play")}</article>`;
     }).join("")}</div></details>`;
   }
 
@@ -1463,7 +1812,9 @@
     } else if (passed) {
       resultMarkup = `<div class="certificate certificate-approved"><span class="certificate-corner top-left" aria-hidden="true">♠</span><span class="certificate-corner red top-right" aria-hidden="true">♥</span><span class="certificate-corner red bottom-left" aria-hidden="true">♦</span><span class="certificate-corner bottom-right" aria-hidden="true">♣</span><div class="certificate-small">CASA DEL JEFE · CERTIFICATE OF READINESS</div><div class="certificate-title">EL JEFE<br>APPROVED</div><div class="certificate-rule"></div><p>This certifies that the bearer completed the 100-hand El Jefe Ultimate Hold’em Challenge with:</p><div class="certificate-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><div class="approved-seal" aria-hidden="true"><span>♛</span><small>CERTIFIED</small></div><p class="certificate-declaration">Approved to play Ultimate Texas Hold’em at Casa del Jefe.</p><div class="certificate-signature">El Jefe</div><div class="certificate-signature-label">House Certification</div><p class="certificate-date">${today}</p><div class="certificate-share">Screenshot this certificate and share it with the table.</div></div>`;
     } else {
-      resultMarkup = `<div class="challenge-fail"><h2>Not quite El Jefe approved</h2><div class="challenge-final-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><p>Score at least 95% to earn certification. Review the mistakes, practice, and try again.</p></div>`;
+      const handsNeeded = 95 - challenge.correct;
+      const handWord = handsNeeded === 1 ? "hand" : "hands";
+      resultMarkup = `<div class="certificate certificate-not-yet"><span class="certificate-corner top-left" aria-hidden="true">♠</span><span class="certificate-corner red top-right" aria-hidden="true">♥</span><span class="certificate-corner red bottom-left" aria-hidden="true">♦</span><span class="certificate-corner bottom-right" aria-hidden="true">♣</span><div class="certificate-small">CASA DEL JEFE · CHALLENGE RESULTS</div><div class="certificate-title">NOT YET<br>CERTIFIED</div><div class="certificate-rule"></div><p>You completed the 100-hand El Jefe Ultimate Hold’em Challenge with:</p><div class="certificate-score">${challenge.correct} / 100 · ${percent.toFixed(1)}%</div><div class="not-yet-seal" aria-hidden="true"><span>♛</span><small>KEEP TRAINING</small></div><p class="certificate-declaration">Certification requires 95 correctly played hands. You are ${handsNeeded} ${handWord} away.</p><p>Review the first mistake from each missed hand, sharpen those decisions, and return to the challenge.</p><div class="certificate-signature">El Jefe</div><div class="certificate-signature-label">The table will be waiting</div><p class="certificate-date">${today}</p><div class="certificate-next-step">Review your mistakes below, then take another run at certification.</div></div>`;
     }
     el.challengeGame.classList.add("hidden");
     el.challengeSummary.innerHTML = `${resultMarkup}${challengeReviewMarkup(challenge.misses)}<div class="challenge-summary-actions"><button class="primary" id="challengeAgain" type="button">Try Again</button><button id="challengeDone" type="button">Done</button></div>`;
@@ -1504,8 +1855,19 @@
   }
 
   function resetTrain() {
-    state.train = emptyTrain();
-    localStorage.removeItem(TRAIN_STORAGE_KEY);
+    state.train.sessions[state.train.strategy] = emptyTrainSession();
+    state.train.round = null;
+    saveTrain();
+    renderTrain();
+  }
+
+  function changeTrainStrategy() {
+    const strategy = el.trainStrategy.value;
+    if (!Object.prototype.hasOwnProperty.call(TRAIN_STRATEGIES, strategy)) return;
+    if (state.train.round && !state.train.round.completed) return;
+    state.train.strategy = strategy;
+    state.train.round = null;
+    saveTrain();
     renderTrain();
   }
 
@@ -1513,6 +1875,7 @@
   el.playDeal.addEventListener("click", startPlayHand);
   el.resetPlay.addEventListener("click", resetPlay);
   el.trainDeal.addEventListener("click", startTrainHand);
+  el.trainStrategy.addEventListener("change", changeTrainStrategy);
   el.resetTrain.addEventListener("click", resetTrain);
   el.lookupRemove.addEventListener("click", removeLookupCard);
   el.lookupClear.addEventListener("click", clearLookup);
@@ -1550,7 +1913,20 @@
     canonicalFlopKey,
     exactFlopDecision,
     exactRiverDecision,
+    holeContributionInfo,
+    elJefeRiverDecision,
     wizardRiverDecision,
+    decisionForStrategy,
+    decisionRuleReference,
+    getTrainState() { return state.train; },
+    setTrainStrategy(strategy) {
+      if (!Object.prototype.hasOwnProperty.call(TRAIN_STRATEGIES, strategy)) throw new Error("Unknown strategy");
+      if (state.train.round && !state.train.round.completed) throw new Error("Finish the active hand first");
+      state.train.strategy = strategy;
+      state.train.round = null;
+      saveTrain();
+      renderTrain();
+    },
     startChallenge,
     exitChallenge,
     showChallengeScore(correct) {
@@ -1585,7 +1961,7 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForUpdate) window.location.reload();
     });
-    navigator.serviceWorker.register("./service-worker.js?v=12").then(registration => {
+    navigator.serviceWorker.register("./service-worker.js?v=16").then(registration => {
       const showWaiting = worker => {
         if (!worker || worker.state !== "installed" || !navigator.serviceWorker.controller) return;
         el.updateNotice.classList.remove("hidden");

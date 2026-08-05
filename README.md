@@ -1,10 +1,13 @@
-# Casa del Jefe — The Ultimate Hold’em Parlor v14
+# Casa del Jefe — The Ultimate Hold’em Parlor v17
 
-## v14 changes
+## Training Room
 
-- Rewrote the El Jefe flop strategy for clearer human use.
-- Added shared definitions for hidden pairs, four-card flushes, and inside/outside straight draws.
-- Replaced the ambiguous “bare” wording with “have no pair.”
-- Clarified the T9/J9 and small-king exceptions.
-- Upgraded both certification designs with the shared Casa del Jefe certificate treatment.
-- Preserved silent full-hand Challenge grading from v13.
+Choose Optimal Play, El Jefe Strategy, or Wizard of Odds Strategy. Each choice maintains its own Hands, Accuracy, and Review mistakes record. After a hand, the first incorrect decision is tied directly to the corresponding rule and section in Look Up.
+
+## El Jefe Challenge
+
+The 100-hand challenge always grades against optimal play. A hand is correct only when every decision is optimal. The challenge records only the first mistake in each missed hand and reveals it after the hand. Score 95% to earn certification; 100% earns Grand Master status.
+
+## Strategy guides
+
+Includes Optimal Preflop Play, the El Jefe and Wizard flop strategies, and the complete El Jefe and Wizard river strategies.
