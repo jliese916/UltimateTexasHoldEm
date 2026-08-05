@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "12";
+  const APP_VERSION = "13";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -1417,12 +1417,19 @@
     const round = challenge.round;
     if (!challenge.active || challenge.finished || !round || round.completed) return;
     if (!availableActions(round.stage).some(item => item.action === action)) return;
-    const optimal = gradeDecision(round, action);
-    round.decisions.push({ stage: round.stage, chosen: action, optimal: optimal.action, acceptable: optimal.acceptableActions.slice() });
-    if (round.firstMistake) {
-      completeChallengeHand(round);
-      return;
+
+    // Challenge hands never reveal whether a decision was correct while the hand is active.
+    // Grade only until the first mistake, then allow the player to finish naturally.
+    if (round.scoringActive) {
+      const optimal = gradeDecision(round, action);
+      round.decisions.push({
+        stage: round.stage,
+        chosen: action,
+        optimal: optimal.action,
+        acceptable: optimal.acceptableActions.slice()
+      });
     }
+
     if (round.stage === "preflop") {
       if (action === "check") { round.stage = "flop"; round.boardVisible = 3; }
       else completeChallengeHand(round);

@@ -2873,3 +2873,14 @@ footer{color:var(--casa-muted)}
   .preflop-chart-cell{font-size:.62rem!important}
   .preflop-strategy-table th{font-size:.57rem!important}
 }
+
+
+/* Ultimate Hold'em Parlor v13: silent full-hand Challenge grading and trainer-sized masthead */
+.train-wordmark span{
+  font-size:.86rem!important;
+  letter-spacing:.105em!important;
+  line-height:1.1!important;
+}
+@media(max-width:390px){
+  .train-wordmark span{font-size:.82rem!important}
+}

@@ -1,4 +1,4 @@
-# Casa del Jefe — The Ultimate Hold’em Parlor v12
+# Casa del Jefe — The Ultimate Hold’em Parlor v13
 
 A self-contained Ultimate Texas Hold’em app with Play, Train, Look Up, and a 100-hand El Jefe Challenge.
 
@@ -14,3 +14,9 @@ A self-contained Ultimate Texas Hold’em app with Play, Train, Look Up, and a 1
 
 - Tightened the preflop chart so it fits desktop screens without horizontal scrolling.
 - Preflop actions are fixed as Check on the left and Raise 4x on the right; later streets keep the same left/right decision positions.
+
+
+## v13 changes
+- Challenge mode now records the first mistake silently but lets the player finish the hand naturally.
+- Decisions after the first mistake do not affect grading.
+- The Training Room wordmark has been reduced to match the other Casa del Jefe trainers.

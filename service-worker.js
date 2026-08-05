@@ -1,13 +1,13 @@
 "use strict";
 
-const BUILD_VERSION = "12";
-const CACHE = "casa-ultimate-holdem-v12";
+const BUILD_VERSION = "13";
+const CACHE = "casa-ultimate-holdem-v13";
 const ASSETS = [
   "./index.html",
-  "./styles.css?v=12",
-  "./poker-engine.js?v=12",
-  "./strategy-data.js?v=12",
-  "./app.js?v=12",
+  "./styles.css?v=13",
+  "./poker-engine.js?v=13",
+  "./strategy-data.js?v=13",
+  "./app.js?v=13",
   "./manifest.webmanifest",
   "./jefe-crest.svg",
   "./favicon-64.png",
