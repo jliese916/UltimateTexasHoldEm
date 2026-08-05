@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "17";
+  const APP_VERSION = "18";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -523,17 +523,29 @@
 
 
   function holeContributionInfo(playerCards, board, evaluation = E.evaluateSeven([...playerCards, ...board])) {
-    const withoutFirst = E.evaluateBest([playerCards[1], ...board]);
-    const withoutSecond = E.evaluateBest([playerCards[0], ...board]);
-    const contributes = [
-      E.compareScore(evaluation.score, withoutFirst.score) > 0,
-      E.compareScore(evaluation.score, withoutSecond.score) > 0
-    ];
     const highIndex = playerCards[0].rank >= playerCards[1].rank ? 0 : 1;
     const lowIndex = highIndex === 0 ? 1 : 0;
     const highRank = playerCards[highIndex].rank;
     const lowRank = playerCards[lowIndex].rank;
     const pocket = highRank === lowRank;
+    let contributes;
+    let pocketContributes = false;
+
+    if (pocket) {
+      // For a pocket pair, removing either physical card leaves an identical card behind.
+      // Treat the pair as contributing when removing both cards weakens the best hand.
+      const boardOnly = E.evaluateBest(board);
+      pocketContributes = E.compareScore(evaluation.score, boardOnly.score) > 0;
+      contributes = [pocketContributes, pocketContributes];
+    } else {
+      const withoutFirst = E.evaluateBest([playerCards[1], ...board]);
+      const withoutSecond = E.evaluateBest([playerCards[0], ...board]);
+      contributes = [
+        E.compareScore(evaluation.score, withoutFirst.score) > 0,
+        E.compareScore(evaluation.score, withoutSecond.score) > 0
+      ];
+    }
+
     const highContributes = contributes[highIndex];
     const lowContributes = contributes[lowIndex];
     const pairRank = evaluation.category === 1 ? evaluation.score[1] : 0;
@@ -547,6 +559,7 @@
       highRank,
       lowRank,
       pocket,
+      pocketContributes,
       highContributes,
       lowContributes,
       onlyHigh: highContributes && !lowContributes,
@@ -600,12 +613,12 @@
     });
 
     if (count <= 18) return decision("call1", `Call with ${count} one-card outs.`);
-    if (boardQuadsKicker && count <= 28) return decision("call1", `Call through 28 outs because the board is four of a kind and a hole card supplies your playing kicker.`);
-    if (pocketDeucesTwoPair && count <= 23) return decision("call1", `Call through 23 outs because pocket deuces make two pair and contribute to your final hand.`);
+    if (boardQuadsKicker && count <= 28) return decision("call1", `Call through 28 outs because the board is four of a kind and a hole card supplies the kicker in your best five-card hand.`);
+    if (pocketDeucesTwoPair && count <= 23) return decision("call1", `Call through 23 outs because the pocket deuces are used to make your two-pair hand.`);
 
     if (count === 19) {
       if (contribution.neither) return decision("fold", "Fold at 19 outs because neither hole card contributes to your final hand.");
-      if (pocketDeuces && contribution.any) return decision("call1", "Call at 19 outs because a pocket deuce contributes to your final hand.");
+      if (pocketDeuces && contribution.any) return decision("call1", "Call at 19 outs because the pocket pair contributes to your best five-card hand.");
       if ([9, 10, 11].includes(startingHigh)) return decision("call1", `Call at 19 outs with a ${E.RANK_LABELS[startingHigh]}-high starting hand when a hole card contributes.`);
       if (startingHigh === 12) {
         const queenTrap = evaluation.category === 0 && contribution.onlyHigh && boardSuitCount === 3;
@@ -713,7 +726,7 @@
     if (count !== null && count <= 18) return "Global Rules · 18 or fewer outs";
     if (count === 19) {
       if (rule.includes("neither hole card")) return "Exactly 19 Outs · Neither hole card contributes";
-      if (rule.includes("pocket deuce")) return "Exactly 19 Outs · Pocket deuces";
+      if (rule.includes("pocket deuce") || rule.includes("pocket pair contributes")) return "Exactly 19 Outs · Pocket deuces";
       if (rule.includes("9-high") || rule.includes("T-high") || rule.includes("J-high")) return "Exactly 19 Outs · 9-high, T-high, or J-high";
       if (rule.includes("queen-high") || rule.includes("queen")) return "Exactly 19 Outs · Q-high starting hand";
       if (rule.includes("king")) return "Exactly 19 Outs · K-high starting hand";
@@ -1542,8 +1555,8 @@
     } else {
       const jefe = elJefeRiverDecision(playerCards, board);
       const wizard = wizardRiverDecision(playerCards, board);
-      cards.push(strategyLookupCard("El Jefe Strategy — Intermediate", jefe, optimal, `One-card dealer outs that beat you: ${jefe.outs.beats}.`));
       cards.push(strategyLookupCard("Wizard of Odds Strategy — Beginner", wizard, optimal, `One-card dealer outs that beat you: ${wizard.outs.beats} of ${wizard.outs.total}.`));
+      cards.push(strategyLookupCard("El Jefe Strategy — Intermediate", jefe, optimal, `One-card dealer outs that beat you: ${jefe.outs.beats}.`));
     }
     el.lookupStrategyResults.innerHTML = cards.join("");
     el.lookupStrategyResults.classList.remove("hidden");

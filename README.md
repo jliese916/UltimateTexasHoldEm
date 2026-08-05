@@ -1,4 +1,4 @@
-# Casa del Jefe — The Ultimate Hold’em Parlor v17
+# Casa del Jefe — The Ultimate Hold’em Parlor v18
 
 ## Training Room
 
@@ -10,4 +10,4 @@ The 100-hand challenge always grades against optimal play. A hand is correct onl
 
 ## Strategy guides
 
-Includes Optimal Preflop Play, the El Jefe and Wizard flop strategies, and the complete El Jefe and Wizard river strategies.
+Includes Optimal Preflop Play, the El Jefe and Wizard flop strategies, and the complete Wizard and El Jefe river strategies. River terminology now distinguishes an individually contributing hole card from a contributing pocket pair.

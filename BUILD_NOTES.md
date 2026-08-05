@@ -1,9 +1,8 @@
-# Build Notes — v17
+# Build Notes — v18
 
-- Added strategy-linked feedback after every regular Training Room hand.
-- The first incorrect decision now names the matching Look Up section, rule, correct action, and explanation.
-- Saved mistake cards retain the same rule reference for later review.
-- Training can still be graded independently against Optimal Play, El Jefe Strategy, or Wizard of Odds Strategy.
-- The 100-hand El Jefe Challenge is explicitly locked to optimal play and preserves only the first mistake per hand.
-- Includes the complete El Jefe river strategy, strategy-selectable training, and the formal Not Yet Certified result.
-- Cache and asset versions advanced to 17.
+- Reordered the River Strategies guide and river lookup cards to show Wizard of Odds before El Jefe.
+- Reworked the El Jefe river guide for clearer, shorter decision flow.
+- Clarified contribution terminology for non-paired hole cards and pocket pairs.
+- Pocket-pair contribution is now evaluated by removing both pocket cards, correctly covering cases such as 22 completing A-3-4-5 or making two pair/trips.
+- Clarified that a board-quads hand with zero or few outs follows the normal outs rule; the through-28 exception applies when a hole card supplies the playing kicker.
+- Cache and asset versions advanced to 18.
