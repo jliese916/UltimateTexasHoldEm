@@ -1,13 +1,13 @@
 "use strict";
 
-const BUILD_VERSION = "20";
-const CACHE = "casa-ultimate-holdem-v20";
+const BUILD_VERSION = "21";
+const CACHE = "casa-ultimate-holdem-v21";
 const ASSETS = [
   "./index.html",
-  "./styles.css?v=20",
-  "./poker-engine.js?v=20",
-  "./strategy-data.js?v=20",
-  "./app.js?v=20",
+  "./styles.css?v=21",
+  "./poker-engine.js?v=21",
+  "./strategy-data.js?v=21",
+  "./app.js?v=21",
   "./manifest.webmanifest",
   "./jefe-crest.svg",
   "./favicon-64.png",
@@ -21,7 +21,11 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener("message", event => {
@@ -34,21 +38,47 @@ self.addEventListener("message", event => {
   if (data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
-function cacheResponse(request, response, cacheKey = request) {
-  if (!response || !response.ok) return response;
-  const copy = response.clone();
-  caches.open(CACHE).then(cache => cache.put(cacheKey, copy)).catch(() => {});
-  return response;
+async function networkFirst(request, cacheKey = request) {
+  try {
+    const response = await fetch(request, { cache: "no-store" });
+    if (response && response.ok) {
+      const cache = await caches.open(CACHE);
+      await cache.put(cacheKey, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(cacheKey);
+    if (cached) return cached;
+    throw error;
+  }
 }
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+
   if (event.request.mode === "navigate") {
-    event.respondWith(caches.match("./index.html").then(cached => {
-      const network = fetch(event.request).then(response => cacheResponse(event.request, response, "./index.html")).catch(() => null);
-      return cached || network;
-    }));
+    event.respondWith(networkFirst(event.request, "./index.html"));
     return;
   }
-  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => cacheResponse(event.request, response)).catch(() => cached)));
+
+  const url = new URL(event.request.url);
+  const isCoreAsset = url.origin === self.location.origin &&
+    /\.(?:js|css)$/.test(url.pathname);
+
+  if (isCoreAsset) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then(cached =>
+      cached || fetch(event.request).then(async response => {
+        if (response && response.ok) {
+          const cache = await caches.open(CACHE);
+          cache.put(event.request, response.clone()).catch(() => {});
+        }
+        return response;
+      })
+    )
+  );
 });

@@ -10,3 +10,9 @@
 - Added one-card-outs display to river feedback.
 - Removed EV and outcome figures from user-facing lookup feedback.
 - Added practical-strategy disclaimers to Flop and River guides.
+
+
+## v21
+- Repaired stale service-worker behavior with network-first navigation and JS/CSS.
+- Added explicit no-cache update checks.
+- Confirmed the selector reads Score against.

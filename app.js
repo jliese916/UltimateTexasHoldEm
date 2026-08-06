@@ -2020,7 +2020,7 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForUpdate) window.location.reload();
     });
-    navigator.serviceWorker.register("./service-worker.js?v=20").then(registration => {
+    navigator.serviceWorker.register("./service-worker.js?v=21", { updateViaCache: "none" }).then(registration => {
       const showWaiting = worker => {
         if (!worker || worker.state !== "installed" || !navigator.serviceWorker.controller) return;
         el.updateNotice.classList.remove("hidden");
@@ -2030,6 +2030,11 @@
         };
       };
       if (registration.waiting) showWaiting(registration.waiting);
+      registration.update().catch(() => {});
+      window.addEventListener("focus", () => registration.update().catch(() => {}));
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") registration.update().catch(() => {});
+      });
       registration.addEventListener("updatefound", () => {
         const worker = registration.installing;
         if (worker) worker.addEventListener("statechange", () => showWaiting(worker));
