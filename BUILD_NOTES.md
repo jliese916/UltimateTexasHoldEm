@@ -16,3 +16,10 @@
 - Repaired stale service-worker behavior with network-first navigation and JS/CSS.
 - Added explicit no-cache update checks.
 - Confirmed the selector reads Score against.
+
+
+## v22
+
+- Collapsed three-strategy scorecards in Train and all mistake reviews.
+- Added a disclosure arrow for optional expected-action and rule detail.
+- Applied the same progressive disclosure to correct and incorrect decisions.

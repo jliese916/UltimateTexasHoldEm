@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "20";
+  const APP_VERSION = "22";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -918,16 +918,28 @@
     const order = strategyOrder(primary);
     const riverOuts = stage === "river" ? oneCardOuts(playerCards, board).beats : null;
     const outsMarkup = riverOuts === null ? "" : `<div class="river-outs-check"><span>One-card outs</span><strong>${riverOuts}</strong></div>`;
-    const rows = order.map((strategy, index) => {
+
+    const summaryRows = order.map((strategy, index) => {
+      const comparison = comparisons[strategy];
+      const meta = TRAIN_STRATEGIES[strategy];
+      const correct = comparison.correct;
+      const selected = index === 0;
+      return `<span class="strategy-summary-row ${correct ? "passes" : "fails"} ${selected ? "primary" : "secondary"}"><span class="strategy-status-mark" aria-label="${correct ? "Correct" : "Incorrect"}">${correct ? "✓" : "×"}</span><span class="strategy-summary-name"><strong>${meta.label}</strong>${selected ? '<small>Scoring standard</small>' : '<small>For comparison</small>'}</span></span>`;
+    }).join("");
+
+    const detailRows = order.map((strategy, index) => {
       const comparison = comparisons[strategy];
       const meta = TRAIN_STRATEGIES[strategy];
       const correct = comparison.correct;
       const selected = index === 0;
       const expected = actionNames(comparison.expected.acceptableActions);
-      const detail = strategy === "optimal" ? "" : humanRuleMarkup(strategy, comparison);
-      return `<section class="strategy-comparison-row ${correct ? "passes" : "fails"} ${selected ? "primary" : "secondary"}"><div class="strategy-comparison-heading"><span class="strategy-status-mark" aria-label="${correct ? "Correct" : "Incorrect"}">${correct ? "✓" : "×"}</span><div><strong>${meta.label}</strong>${selected ? '<small>Scoring standard</small>' : '<small>For comparison</small>'}</div><span class="strategy-expected-action">${expected}</span></div>${strategy === "optimal" ? "" : detail}</section>`;
+      const explanation = strategy === "optimal"
+        ? `<div class="optimal-lookup-detail"><small>Optimal table lookup</small><p>The table selects <strong>${expected}</strong>.</p></div>`
+        : humanRuleMarkup(strategy, comparison);
+      return `<section class="strategy-detail-row ${correct ? "passes" : "fails"} ${selected ? "primary" : "secondary"}"><div class="strategy-detail-heading"><span class="strategy-status-mark" aria-hidden="true">${correct ? "✓" : "×"}</span><div><strong>${meta.label}</strong><small>${correct ? "Strategy followed" : "Strategy missed"}</small></div><span class="strategy-expected-action">${expected}</span></div>${explanation}${strategy === "optimal" ? strategyExceptionNote(comparisons) : ""}</section>`;
     }).join("");
-    return `<div class="strategy-comparison-panel">${outsMarkup}${rows}${strategyExceptionNote(comparisons)}</div>`;
+
+    return `<details class="strategy-comparison-panel"><summary class="strategy-comparison-summary" title="Show strategy details"><span class="strategy-summary-list">${summaryRows}</span><span class="strategy-disclosure-arrow" aria-hidden="true">⌄</span></summary><div class="strategy-comparison-expanded">${outsMarkup}${detailRows}</div></details>`;
   }
 
   function renderMistakeList(mistakes, summaryNode, listNode) {
@@ -2020,7 +2032,7 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForUpdate) window.location.reload();
     });
-    navigator.serviceWorker.register("./service-worker.js?v=21", { updateViaCache: "none" }).then(registration => {
+    navigator.serviceWorker.register("./service-worker.js?v=22", { updateViaCache: "none" }).then(registration => {
       const showWaiting = worker => {
         if (!worker || worker.state !== "installed" || !navigator.serviceWorker.controller) return;
         el.updateNotice.classList.remove("hidden");

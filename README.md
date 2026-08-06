@@ -1,4 +1,4 @@
-# Casa del Jefe — The Ultimate Hold’em Parlor v21
+# Casa del Jefe — The Ultimate Hold’em Parlor v22
 
 ## Training Room
 
@@ -22,3 +22,8 @@ Training and mistake reviews compare the player action against Optimal, El Jefe,
 - Uses network-first navigation and core assets so an older service worker cannot trap the site on an obsolete build.
 - Forces service-worker update checks on load, focus, and return to the tab.
 - Shows “A new version is available.” when a waiting worker is ready.
+
+
+## v22 compact strategy review
+
+Strategy comparisons now open collapsed. The first level shows only pass/fail marks for Optimal, El Jefe, and Wizard; the disclosure arrow reveals expected actions, rule explanations, river outs, and exception notes.
