@@ -11,7 +11,7 @@
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./favicon-64.png" rel="icon" type="image/png"/>
 <link href="./apple-touch-icon.png" rel="apple-touch-icon"/>
-<link href="./styles.css?v=18" rel="stylesheet"/>
+<link href="./styles.css?v=20" rel="stylesheet"/>
 </head>
 <body>
 <main class="app">
@@ -96,7 +96,7 @@
 <div class="play-accuracy-stat"><small>Accuracy</small><span class="play-accuracy-line"><strong id="trainAccuracy">NA</strong><span aria-hidden="true" class="play-decision-indicator" id="trainDecisionIndicator"></span></span></div>
 </div>
 <div class="train-strategy-selector">
-<label for="trainStrategy">Train against</label>
+<label for="trainStrategy">Score against</label>
 <select id="trainStrategy">
 <option value="optimal">Optimal Play</option>
 <option value="jefe">El Jefe Strategy</option>
@@ -157,6 +157,7 @@
 <details class="strategy-guide-details" id="postflopStrategyDetails">
 <summary>Flop Strategies</summary>
 <div class="strategy-guide-body">
+<div class="strategy-disclaimer"><strong>About these strategies</strong><p>Wizard of Odds and El Jefe are practical strategies designed for human play. They will not match optimal play in every situation. Some optimal exceptions are too uncommon or complicated to express as a concise rule. The Best Play result and the El Jefe Challenge are always scored against optimal play.</p></div>
 <div class="strategy-terms-card">
 <h3>Flop Strategy Terms</h3>
 <dl class="strategy-terms-list">
@@ -173,7 +174,7 @@
 <li>Raise with a four-card flush when at least one of your hole cards in that suit is a ten or higher.</li>
 <li>Otherwise check.</li>
 </ol></div>
-<div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Advanced</span></h3><p class="strategy-order-note">Apply these rules in order. Raise 2x when the first applicable rule tells you to raise.</p><ol>
+<div class="strategy-guide-card strategy-jefe"><h3>El Jefe Strategy <span>Intermediate</span></h3><p class="strategy-order-note">Apply these rules in order. Raise 2x when the first applicable rule tells you to raise.</p><ol>
 <li><strong>Straight or better:</strong> Raise.</li>
 <li><strong>Pocket deuces:</strong> With 22, raise if the flop contains a deuce or if the flop is three of a kind. Otherwise, check.</li>
 <li><strong>Hidden pair:</strong> Raise.</li>
@@ -189,6 +190,7 @@
 <details class="strategy-guide-details" id="riverStrategyDetails">
 <summary>River Strategies</summary>
 <div class="strategy-guide-body">
+<div class="strategy-disclaimer"><strong>About these strategies</strong><p>Wizard of Odds and El Jefe are practical strategies designed for human play. They will not match optimal play in every situation. Some optimal exceptions are too uncommon or complicated to express as a concise rule. The Best Play result and the El Jefe Challenge are always scored against optimal play.</p></div>
 <div class="strategy-terms-card">
 <h3>River Strategy Terms</h3>
 <dl class="strategy-terms-list">
@@ -207,7 +209,7 @@
 <li>Otherwise, fold.</li>
 </ol></div>
 <div class="strategy-guide-card strategy-jefe river-strategy-card">
-<h3>El Jefe Strategy <span>Advanced</span></h3>
+<h3>El Jefe Strategy <span>Intermediate</span></h3>
 <p class="strategy-order-note">Count the one-card outs. Apply the automatic rules first, then use the section for your exact number of outs.</p>
 <section class="river-rule-section river-rule-global"><h4>Automatic Calls and Special Exceptions</h4><ul>
 <li><strong>18 or fewer outs:</strong> Call.</li>
@@ -271,8 +273,8 @@
 </div>
 </footer>
 </main>
-<script src="./poker-engine.js?v=19"></script>
-<script src="./strategy-data.js?v=19"></script>
-<script defer src="./app.js?v=19"></script>
+<script src="./poker-engine.js?v=20"></script>
+<script src="./strategy-data.js?v=20"></script>
+<script defer src="./app.js?v=20"></script>
 </body>
 </html>

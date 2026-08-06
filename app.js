@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "19";
+  const APP_VERSION = "20";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -795,28 +795,10 @@
       };
     }
 
-    if (stage === "flop") {
-      if (expected.exception) {
-        return {
-          path: "Look Up → Post-flop decision",
-          title: "Best-play exception",
-          explanation: `This exact flop is an exception to the simplified El Jefe rule. The best play is ${actionNames(expected.acceptableActions)}.`
-        };
-      }
-      const simplified = expected.simplified;
-      return {
-        path: "Look Up → Post-flop decision",
-        title: simplified ? `Best play · ${elJefeFlopRuleTitle(simplified.rule || "")}` : "Best flop play",
-        explanation: simplified && simplified.rule ? simplified.rule : `The best play is ${actionNames(expected.acceptableActions)}.`
-      };
-    }
-
-    const callEV = Number.isFinite(expected.callEV) ? formatUnits(expected.callEV) : "the calculated call value";
-    const foldEV = Number.isFinite(expected.foldEV) ? formatUnits(expected.foldEV) : "−2 units";
     return {
-      path: "Look Up → River decision",
-      title: "Best river play",
-      explanation: `Calling is worth ${callEV}; folding is worth ${foldEV}. The best play is ${actionNames(expected.acceptableActions)}.`
+      path: stage === "flop" ? "Look Up → Post-flop decision" : "Look Up → River decision",
+      title: stage === "flop" ? "Optimal flop lookup" : "Optimal river lookup",
+      explanation: `The optimal lookup selects ${actionNames(expected.acceptableActions)}.`
     };
   }
 
@@ -862,10 +844,7 @@
 
   function mistakeText(mistake) {
     if (!mistake) return "";
-    const optimal = mistake.acceptable.length > 1
-      ? mistake.acceptable.map(action => ACTION_LABELS[action]).join(" or ")
-      : ACTION_LABELS[mistake.optimal];
-    return `First mistake: ${STREET_LABELS[mistake.stage]}. You chose ${ACTION_LABELS[mistake.chosen]}; optimal play was ${optimal}.`;
+    return `First mistake: ${STREET_LABELS[mistake.stage]}. You chose ${ACTION_LABELS[mistake.chosen]}.`;
   }
 
   function copyCard(card) {
@@ -898,12 +877,60 @@
     return actions.map(action => ACTION_LABELS[action]).join(" or ");
   }
 
-  function ruleFailureMarkup(reference, heading = "Why this missed the strategy") {
-    if (!reference) return "";
-    return `<div class="strategy-rule-failure"><small>${heading}</small><span class="strategy-rule-path">${reference.path}</span><strong>${reference.title}</strong><p>${reference.explanation}</p></div>`;
+  function strategyOrder(primary = "optimal") {
+    const all = ["optimal", "jefe", "wizard"];
+    return [primary, ...all.filter(strategy => strategy !== primary)];
   }
 
-  function renderMistakeList(mistakes, summaryNode, listNode, expectedLabel = "Optimal play") {
+  function strategyComparison(stage, playerCards, board, chosen) {
+    const comparisons = {};
+    for (const strategy of ["optimal", "jefe", "wizard"]) {
+      const expected = normalizeStrategyDecision(decisionForStrategy(strategy, stage, playerCards, board));
+      comparisons[strategy] = {
+        strategy,
+        expected,
+        correct: expected.acceptableActions.includes(chosen),
+        reference: strategy === "optimal" ? null : decisionRuleReference(strategy, stage, expected, playerCards)
+      };
+    }
+    return comparisons;
+  }
+
+  function strategyExceptionNote(comparisons) {
+    if (comparisons.optimal.correct) return "";
+    const humanMatches = ["jefe", "wizard"].filter(strategy => comparisons[strategy].correct);
+    if (!humanMatches.length) return "";
+    const names = humanMatches.map(strategy => TRAIN_STRATEGIES[strategy].recapLabel);
+    const subject = names.length === 2 ? "both the El Jefe and Wizard of Odds strategies" : `the ${names[0]} strategy`;
+    return `<div class="human-strategy-exception"><strong>Human-strategy exception</strong><p>This decision follows ${subject} but differs from optimal play. It is one of the less common table-lookup exceptions that is difficult to capture with a concise rule.</p></div>`;
+  }
+
+  function humanRuleMarkup(strategy, comparison) {
+    const label = TRAIN_STRATEGIES[strategy].label;
+    const reference = comparison.reference;
+    if (!reference) return "";
+    const heading = comparison.correct ? `Rule followed · ${label}` : `Why this missed ${label}`;
+    return `<div class="strategy-rule-detail ${comparison.correct ? "matched" : "missed"}"><small>${heading}</small><span class="strategy-rule-path">${reference.path}</span><strong>${reference.title}</strong><p>${reference.explanation}</p></div>`;
+  }
+
+  function strategyComparisonMarkup({ stage, playerCards, board, chosen, primary = "optimal" }) {
+    const comparisons = strategyComparison(stage, playerCards, board, chosen);
+    const order = strategyOrder(primary);
+    const riverOuts = stage === "river" ? oneCardOuts(playerCards, board).beats : null;
+    const outsMarkup = riverOuts === null ? "" : `<div class="river-outs-check"><span>One-card outs</span><strong>${riverOuts}</strong></div>`;
+    const rows = order.map((strategy, index) => {
+      const comparison = comparisons[strategy];
+      const meta = TRAIN_STRATEGIES[strategy];
+      const correct = comparison.correct;
+      const selected = index === 0;
+      const expected = actionNames(comparison.expected.acceptableActions);
+      const detail = strategy === "optimal" ? "" : humanRuleMarkup(strategy, comparison);
+      return `<section class="strategy-comparison-row ${correct ? "passes" : "fails"} ${selected ? "primary" : "secondary"}"><div class="strategy-comparison-heading"><span class="strategy-status-mark" aria-label="${correct ? "Correct" : "Incorrect"}">${correct ? "✓" : "×"}</span><div><strong>${meta.label}</strong>${selected ? '<small>Scoring standard</small>' : '<small>For comparison</small>'}</div><span class="strategy-expected-action">${expected}</span></div>${strategy === "optimal" ? "" : detail}</section>`;
+    }).join("");
+    return `<div class="strategy-comparison-panel">${outsMarkup}${rows}${strategyExceptionNote(comparisons)}</div>`;
+  }
+
+  function renderMistakeList(mistakes, summaryNode, listNode) {
     summaryNode.textContent = `Review mistakes (${mistakes.length})`;
     if (!mistakes.length) {
       listNode.innerHTML = `<p class="mistake-empty">No mistakes in this session.</p>`;
@@ -913,7 +940,14 @@
       const board = mistake.board.length
         ? `<div class="mistake-card-group"><small>Board</small><div class="mistake-mini-hand">${mistake.board.map(miniCardMarkup).join("")}</div></div>`
         : "";
-      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>${expectedLabel}</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div>${ruleFailureMarkup(mistake.reference)}</article>`;
+      const comparison = strategyComparisonMarkup({
+        stage: mistake.stage,
+        playerCards: mistake.playerCards,
+        board: mistake.board,
+        chosen: mistake.chosen,
+        primary: mistake.strategy || "optimal"
+      });
+      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-your-play"><small>Your play</small><strong>${ACTION_LABELS[mistake.chosen]}</strong></div>${comparison}</article>`;
     }).join("");
   }
 
@@ -928,12 +962,18 @@
   function trainDecisionRecap(round) {
     const strategy = TRAIN_STRATEGIES[round.trainingStrategy] || TRAIN_STRATEGIES.optimal;
     const rows = round.decisions.map(decision => {
-      const correct = decision.acceptable.includes(decision.chosen);
-      const chosen = correct ? "" : `<small>Your play: ${ACTION_LABELS[decision.chosen]}</small>`;
-      const ruleFailure = correct ? "" : ruleFailureMarkup(decision.reference);
-      return `<div class="decision-recap-row ${correct ? "correct" : "incorrect"}"><span class="decision-recap-mark">${correct ? "+" : "−"}</span><div><strong>${STREET_LABELS[decision.stage]}</strong><span>${strategy.recapLabel}: ${actionNames(decision.acceptable)}</span>${chosen}${ruleFailure}</div></div>`;
+      const visibleBoard = decision.stage === "preflop" ? [] : decision.stage === "flop" ? round.board.slice(0, 3) : round.board.slice(0, 5);
+      const comparison = strategyComparisonMarkup({
+        stage: decision.stage,
+        playerCards: round.playerCards,
+        board: visibleBoard,
+        chosen: decision.chosen,
+        primary: round.trainingStrategy
+      });
+      const unscored = decision.scored === false ? `<div class="decision-unscored"><strong>Not scored</strong><span>The hand was already marked incorrect at an earlier street. These comparisons are for reference only.</span></div>` : "";
+      return `<section class="decision-street-review ${decision.scored === false ? "unscored" : ""}"><div class="decision-street-heading"><strong>${STREET_LABELS[decision.stage]}</strong><span>Your play: ${ACTION_LABELS[decision.chosen]}</span></div>${unscored}${comparison}</section>`;
     }).join("");
-    return `<div class="decision-recap"><div class="decision-recap-title">Correct play by street · ${strategy.label}</div>${rows}</div>`;
+    return `<div class="decision-recap"><div class="decision-recap-title">Hand review · scored against ${strategy.label}</div>${rows}</div>`;
   }
 
   function newPlayRound() {
@@ -1278,15 +1318,10 @@
     const round = state.train.round;
     if (!round || round.completed) return;
     if (!availableActions(round.stage).some(item => item.action === action)) return;
-    const expected = gradeDecision(round, action, round.trainingStrategy);
+    const graded = gradeDecision(round, action, round.trainingStrategy);
+    const expected = graded || normalizeStrategyDecision(decisionForStrategy(round.trainingStrategy, round.stage, round.playerCards, round.board));
     round.lastOptimal = expected;
-    round.decisions.push({ stage: round.stage, chosen: action, optimal: expected.action, acceptable: expected.acceptableActions.slice(), rule: expected.rule || "", reference: expected.reference ? { ...expected.reference } : null });
-    if (round.firstMistake) {
-      round.completed = true;
-      completeTrainHand(round);
-      renderTrain();
-      return;
-    }
+    round.decisions.push({ stage: round.stage, chosen: action, optimal: expected.action, acceptable: expected.acceptableActions.slice(), rule: expected.rule || "", reference: expected.reference ? { ...expected.reference } : null, scored: Boolean(graded) });
     if (round.stage === "preflop") {
       if (action === "check") {
         round.stage = "flop";
@@ -1328,7 +1363,7 @@
     el.trainHands.textContent = String(t.hands);
     el.trainAccuracy.textContent = formatPercent(t.perfectHands, t.hands);
     setDecisionIndicator(el.trainDecisionIndicator, round && round.completed ? round : null);
-    renderMistakeList(t.mistakes, el.trainMistakeSummary, el.trainMistakeList, `${strategy.recapLabel} play`);
+    renderMistakeList(t.mistakes, el.trainMistakeSummary, el.trainMistakeList);
     el.trainDeal.disabled = Boolean(round && !round.completed);
     el.trainDeal.textContent = round && round.completed ? "Deal Next" : "Deal";
     el.trainFeedback.classList.remove("correct");
@@ -1336,7 +1371,7 @@
       el.trainMessage.textContent = "Press Deal to begin.";
       el.trainFeedback.classList.add("hidden");
     } else if (round.completed) {
-      el.trainMessage.textContent = round.perfect ? `Hand played correctly against ${strategy.label}.` : `First mistake against ${strategy.label} is explained below.`;
+      el.trainMessage.textContent = round.perfect ? `Hand followed ${strategy.label}.` : `Hand review shows the first decision that missed ${strategy.label}.`;
       el.trainFeedback.innerHTML = trainDecisionRecap(round);
       el.trainFeedback.classList.remove("hidden");
       el.trainFeedback.classList.toggle("correct", round.perfect);
@@ -1524,8 +1559,8 @@
           pathText = "Off the optimal path: the best post-flop play is Raise 2x.";
         }
       }
-      const tieText = result.indifferent ? "Call and Fold have identical value." : `Calling is ${result.margin >= 0 ? "better" : "worse"} by ${Math.abs(result.margin).toFixed(4)} units.`;
-      html = `<div class="lookup-verdict${reachable ? "" : " warning"}"><strong>Best Play</strong>${actionBadge(result.action)}<span>${pathText}</span></div><div class="lookup-ev-grid"><div><small>Call EV</small><strong>${result.callEV.toFixed(4)}</strong></div><div><small>Fold EV</small><strong>-2.0000</strong></div><div><small>Dealer hands</small><strong>${result.combinations}</strong></div></div><p class="lookup-explanation">${tieText} Dealer outcomes: ${result.wins} player wins, ${result.ties} ties, and ${result.losses} losses.</p>`;
+      const tieText = result.indifferent ? "Call and Fold are both acceptable." : "";
+      html = `<div class="lookup-verdict${reachable ? "" : " warning"}"><strong>Best Play</strong>${actionBadge(result.action)}<span>${pathText}</span></div>${tieText ? `<p class="lookup-explanation">${tieText}</p>` : ""}`;
     }
 
     state.lookup.resultSignature = lookupCardSignature();
@@ -1550,8 +1585,8 @@
     if (street === "flop") {
       const jefe = elJefeFlopDecision(playerCards, board);
       const wizard = wizardFlopDecision(playerCards, board);
-      cards.push(strategyLookupCard("El Jefe Strategy — Intermediate", jefe, optimal, `Cuts the Wizard strategy’s post-flop decision cost by ${D.flopPenaltyReductionPercent.toFixed(2)}% in our analysis.`));
-      cards.push(strategyLookupCard("Wizard of Odds Strategy — Beginner", wizard, optimal, "The simpler published basic strategy."));
+      cards.push(strategyLookupCard("Wizard of Odds Strategy — Beginner", wizard, optimal, "A concise strategy designed for easier memorization."));
+      cards.push(strategyLookupCard("El Jefe Strategy — Intermediate", jefe, optimal, "A more detailed human strategy designed to track optimal play more closely."));
     } else {
       const jefe = elJefeRiverDecision(playerCards, board);
       const wizard = wizardRiverDecision(playerCards, board);
@@ -1808,7 +1843,14 @@
     if (!misses.length) return "";
     return `<details class="mistake-review challenge-mistake-review"><summary>Review mistakes (${misses.length})</summary><div class="mistake-list">${misses.slice().reverse().map(mistake => {
       const board = mistake.board.length ? `<div class="mistake-card-group"><small>Board</small><div class="mistake-mini-hand">${mistake.board.map(miniCardMarkup).join("")}</div></div>` : "";
-      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-decision-grid"><div><small>Your play</small><strong class="mistake-chosen">${ACTION_LABELS[mistake.chosen]}</strong></div><div><small>Optimal play</small><strong class="mistake-optimal">${actionNames(mistake.acceptable)}</strong></div></div>${ruleFailureMarkup(mistake.reference, "Why this missed optimal play")}</article>`;
+      const comparison = strategyComparisonMarkup({
+        stage: mistake.stage,
+        playerCards: mistake.playerCards,
+        board: mistake.board,
+        chosen: mistake.chosen,
+        primary: "optimal"
+      });
+      return `<article class="mistake-card"><h3>Hand ${mistake.number} · ${STREET_LABELS[mistake.stage]}</h3><div class="mistake-visual"><div class="mistake-card-group"><small>Player</small><div class="mistake-mini-hand">${mistake.playerCards.map(miniCardMarkup).join("")}</div></div>${board}</div><div class="mistake-your-play"><small>Your play</small><strong>${ACTION_LABELS[mistake.chosen]}</strong></div>${comparison}</article>`;
     }).join("")}</div></details>`;
   }
 
@@ -1931,6 +1973,10 @@
     wizardRiverDecision,
     decisionForStrategy,
     decisionRuleReference,
+    strategyComparison,
+    strategyComparisonMarkup,
+    startTrainHand,
+    takeTrainAction,
     getTrainState() { return state.train; },
     setTrainStrategy(strategy) {
       if (!Object.prototype.hasOwnProperty.call(TRAIN_STRATEGIES, strategy)) throw new Error("Unknown strategy");
@@ -1974,7 +2020,7 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForUpdate) window.location.reload();
     });
-    navigator.serviceWorker.register("./service-worker.js?v=16").then(registration => {
+    navigator.serviceWorker.register("./service-worker.js?v=20").then(registration => {
       const showWaiting = worker => {
         if (!worker || worker.state !== "installed" || !navigator.serviceWorker.controller) return;
         el.updateNotice.classList.remove("hidden");
