@@ -18,7 +18,7 @@
 - Confirmed the selector reads Score against.
 
 
-## v22
+## v23
 
 - Collapsed three-strategy scorecards in Train and all mistake reviews.
 - Added a disclosure arrow for optional expected-action and rule detail.

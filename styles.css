@@ -3214,3 +3214,9 @@ footer{color:var(--casa-muted)}
   .strategy-detail-row .human-strategy-exception,
   .optimal-lookup-detail{margin-left:0}
 }
+
+
+/* v23: unreachable optimal flop comparisons are neutral N/A, never pass/fail */
+.strategy-summary-row.not-applicable,.strategy-detail-row.not-applicable{--status:#87958d}
+.strategy-summary-row.not-applicable .strategy-status-mark,.strategy-detail-row.not-applicable .strategy-status-mark{background:#66736d;color:#f0ede3}
+.strategy-detail-row.not-applicable .strategy-expected-action{color:#c8c1ad}

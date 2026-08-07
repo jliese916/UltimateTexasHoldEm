@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  const APP_VERSION = "22";
+  const APP_VERSION = "23";
   const E = window.UltimateHoldemEngine;
   const D = window.UTHStrategyData;
   if (!E) throw new Error("UltimateHoldemEngine did not load.");
@@ -686,7 +686,17 @@
   function decisionForStrategy(strategy, stage, playerCards, board) {
     // All three training choices share the same preflop chart.
     if (stage === "preflop") return preflopDecision(playerCards);
-    if (strategy === "optimal") return optimalForStage(stage, playerCards, board);
+    if (strategy === "optimal") {
+      if (stage === "flop" && preflopDecision(playerCards).action !== "check") {
+        return {
+          action: null,
+          acceptableActions: [],
+          notApplicable: true,
+          rule: "Off the optimal path: this starting hand should have raised 4x preflop."
+        };
+      }
+      return optimalForStage(stage, playerCards, board);
+    }
     if (strategy === "jefe") {
       if (stage === "flop") return normalizeStrategyDecision(elJefeFlopDecision(playerCards, board.slice(0, 3)));
       if (stage === "river") return normalizeStrategyDecision(elJefeRiverDecision(playerCards, board.slice(0, 5)));
@@ -822,6 +832,7 @@
   function gradeDecision(round, action, strategy = "optimal") {
     if (!round.scoringActive) return null;
     const rawExpected = decisionForStrategy(strategy, round.stage, round.playerCards, round.board);
+    if (rawExpected.notApplicable) return null;
     const expected = {
       ...rawExpected,
       reference: decisionRuleReference(strategy, round.stage, rawExpected, round.playerCards)
@@ -886,18 +897,20 @@
     const comparisons = {};
     for (const strategy of ["optimal", "jefe", "wizard"]) {
       const expected = normalizeStrategyDecision(decisionForStrategy(strategy, stage, playerCards, board));
+      const notApplicable = Boolean(expected.notApplicable);
       comparisons[strategy] = {
         strategy,
         expected,
-        correct: expected.acceptableActions.includes(chosen),
-        reference: strategy === "optimal" ? null : decisionRuleReference(strategy, stage, expected, playerCards)
+        notApplicable,
+        correct: notApplicable ? null : expected.acceptableActions.includes(chosen),
+        reference: strategy === "optimal" || notApplicable ? null : decisionRuleReference(strategy, stage, expected, playerCards)
       };
     }
     return comparisons;
   }
 
   function strategyExceptionNote(comparisons) {
-    if (comparisons.optimal.correct) return "";
+    if (comparisons.optimal.notApplicable || comparisons.optimal.correct) return "";
     const humanMatches = ["jefe", "wizard"].filter(strategy => comparisons[strategy].correct);
     if (!humanMatches.length) return "";
     const names = humanMatches.map(strategy => TRAIN_STRATEGIES[strategy].recapLabel);
@@ -922,16 +935,21 @@
     const summaryRows = order.map((strategy, index) => {
       const comparison = comparisons[strategy];
       const meta = TRAIN_STRATEGIES[strategy];
-      const correct = comparison.correct;
       const selected = index === 0;
-      return `<span class="strategy-summary-row ${correct ? "passes" : "fails"} ${selected ? "primary" : "secondary"}"><span class="strategy-status-mark" aria-label="${correct ? "Correct" : "Incorrect"}">${correct ? "✓" : "×"}</span><span class="strategy-summary-name"><strong>${meta.label}</strong>${selected ? '<small>Scoring standard</small>' : '<small>For comparison</small>'}</span></span>`;
+      const statusClass = comparison.notApplicable ? "not-applicable" : comparison.correct ? "passes" : "fails";
+      const statusLabel = comparison.notApplicable ? "Not applicable" : comparison.correct ? "Correct" : "Incorrect";
+      const statusMark = comparison.notApplicable ? "—" : comparison.correct ? "✓" : "×";
+      return `<span class="strategy-summary-row ${statusClass} ${selected ? "primary" : "secondary"}"><span class="strategy-status-mark" aria-label="${statusLabel}">${statusMark}</span><span class="strategy-summary-name"><strong>${meta.label}</strong>${selected ? '<small>Scoring standard</small>' : '<small>For comparison</small>'}</span></span>`;
     }).join("");
 
     const detailRows = order.map((strategy, index) => {
       const comparison = comparisons[strategy];
       const meta = TRAIN_STRATEGIES[strategy];
-      const correct = comparison.correct;
       const selected = index === 0;
+      if (comparison.notApplicable) {
+        return `<section class="strategy-detail-row not-applicable ${selected ? "primary" : "secondary"}"><div class="strategy-detail-heading"><span class="strategy-status-mark" aria-hidden="true">—</span><div><strong>${meta.label}</strong><small>Not applicable</small></div><span class="strategy-expected-action">N/A</span></div><div class="optimal-lookup-detail"><small>Off the optimal path</small><p>This starting hand should have raised 4x preflop, so there is no optimal flop decision to compare.</p></div></section>`;
+      }
+      const correct = comparison.correct;
       const expected = actionNames(comparison.expected.acceptableActions);
       const explanation = strategy === "optimal"
         ? `<div class="optimal-lookup-detail"><small>Optimal table lookup</small><p>The table selects <strong>${expected}</strong>.</p></div>`
@@ -2032,7 +2050,7 @@
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForUpdate) window.location.reload();
     });
-    navigator.serviceWorker.register("./service-worker.js?v=22", { updateViaCache: "none" }).then(registration => {
+    navigator.serviceWorker.register("./service-worker.js?v=23", { updateViaCache: "none" }).then(registration => {
       const showWaiting = worker => {
         if (!worker || worker.state !== "installed" || !navigator.serviceWorker.controller) return;
         el.updateNotice.classList.remove("hidden");
